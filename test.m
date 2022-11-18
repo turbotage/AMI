@@ -21,7 +21,7 @@ Bmodes_new = reshape(Bmodes_fnew, shape(1), shape(2), shape(3));
 %animate_stuff(Bmodes_new);
 %%
 
-
+disp('Hello World');
 draw_pic(Bmodes, Bmodes_new);
 
 function animate_stuff(mat)
