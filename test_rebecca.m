@@ -1,9 +1,9 @@
-%%
+%% Dataset 3 file 1
 rfmat = open('RF_MAT.mat').RF_MAT;
 
 frame = 5;
 Bmodes = sqrt(abs(hilbert(squeeze(rfmat(:,:,:)))));
-shape = size(Bmodes)
+shape = size(Bmodes);
 Bmodes_f = reshape(Bmodes, shape(1)*shape(2), shape(3));
 
 [U,S,V] = svd(Bmodes_f, 'econ');
@@ -15,10 +15,26 @@ Snew(1:2,1:2) = 0;
 Bmodes_fnew = U * Snew * V';
 Bmodes_new = reshape(Bmodes_fnew, shape(1), shape(2), shape(3));
 
-%figure(1);
-%animate_stuff(Bmodes);
-%figure(2);
-%animate_stuff(Bmodes_new);
+%% Dataset 3 file 1
+% How to read this large file (in pieces)
+fn_STR = '181023_1311.mat';
+
+h = matfile(fn_STR);
+% Get the "sound data" or "Radiofrequency data". 
+% The columns, i.e. second dimension is the channels (x-direction) and y-
+% diretion is the sound signa which is also depth dimension y
+RF_MAT = h.rf_data_set(:,:,1:4000); % Read first 4000 frames. NB: Frames 
+% are samples at 2000Hz, i.e. 0.5ms between each frame. so 2000 frames is 
+% 1 second sequence
+
+% How to reconstruct an image from the RF_MAT data
+frame_select = 10;
+B_MAT = sqrt(abs(hilbert(squeeze(RF_MAT(:,:,frame_select))))); % The sqrt 
+% is just for "compression" or the intensity data
+
+
+% You can read the corresponding TVI data using the same approach as above.
+
 %%
 
 disp('Hello World');
