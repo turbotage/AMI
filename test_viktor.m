@@ -1,11 +1,19 @@
-
+%%
 fn_STR = '181023_1311.mat';
+ndata = 500
 h = matfile(fn_STR);
-rfmatf = single(h.rf_data_set(:,:,1:500));
+rfmat = h.rf_data_set(:,:,1:4000);
+rfmat_downsampled = resample(rfmat,1, 4,'Dimension', 3);
+
+%%
+
+
+%%
+rfmat_dsf = single(load('181023_1311_rs.mat').rfmat_downsampled);
+
 %%
 %load DATA
-Bmodes = sqrt(abs(hilbert(squeeze(rfmatf(:,:,:)))));
-clear rfmatf
+Bmodes = sqrt(abs(hilbert(squeeze(rfmat_dsf(:,:,:)))));
 shape = size(Bmodes)
 Bmodes_f = reshape(Bmodes, shape(1)*shape(2), shape(3));
 clear Bmodes
@@ -18,13 +26,11 @@ tvif = single(h.TVI_MAT(:,:,1:500));
 tvif = sqrt(abs(hilbert(squeeze(tvif(:,:,:)))));
 
 %%
-
-%%
 [U,S,V] = svd(Bmodes_f, 'econ');
 
 Snew = S;
-Snew(2:end, 25:end) = 0;
-Snew(1:4,1:4) = 0;
+Snew(25:end, 25:end) = 0;
+Snew(1:20,1:20) = 0;
 
 Bmodes_fnew = U * Snew * V';
 Bmodes_new = reshape(Bmodes_fnew, shape(1), shape(2), shape(3));
@@ -35,8 +41,6 @@ Bmodes_new = reshape(Bmodes_fnew, shape(1), shape(2), shape(3));
 %animate_stuff(Bmodes_new);
 %%
 
-
-disp('Hello World');
 draw_pic(tvif, Bmodes_new);
 
 function draw_pic(mat1, mat2)
