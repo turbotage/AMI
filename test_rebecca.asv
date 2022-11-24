@@ -1,14 +1,14 @@
-%  AMI Project 2022
-%% load dataset 1 ... only image contraction w ~ Hz full activation vs full rest
+%% AMI Project 2022 %%
+% load dataset 1
 
-%% load dataset 2 stimulated contraction w ~1.6Hz 1 muscle complex
+%% load dataset 2 stimulated contraction w ~1.6Hz
 fn_STR = '181023_1311.mat';
 h = matfile(fn_STR);
 Fsamp=2000;
 rfmatf = single(h.rf_data_set(:,:,1:500)); % need full set but take every 
 % other or every fourth, downsampling to 1000 or 500 Hz
 
-%% load dataset 3 voluntary contraction w ~5-25Hz 2-4 muscle complexes
+%% load dataset 3 voluntary contraction w ~5-25Hz
 Bmodes = sqrt(abs(hilbert(squeeze(rfmatf(:,:,:)))));
 clear rfmatf
 shape = size(Bmodes);
@@ -55,8 +55,8 @@ y_filt = filtfilt(b,a,y);
 
 % convolution
 
-% combination with colorcoding in freq space to RGB and then combined into 
-% a new image RGB colormap R for low freqs, B for high, G for original sig
+% combination with colorcoding in freq space to RGB and then combined into a
+% new image RGB colormap R for low freqs, B for high, G for original sig
 % envelope.
 
 
@@ -64,19 +64,6 @@ y_filt = filtfilt(b,a,y);
 % Prefiltering
 % median3 and butter order 4 on both TVI and SVD, keeping the freqs in
 % range 5-25 Hz
-
-% tripple median filtering
-Bmodes_fin=medfilt3(Bmodes_new);
-tvi_fin=medfilt3(tvif);
-
-% spatial filtering
-C = conv2(A, B);
-
-% freq filtering
-% idea: bandpass on every pixelintensity over activationtime 5-15(30) Hz
-% for dataset 2 but around 1.5 Hz for dataset 3
-[b,a] = butter(4,[5 25]./(Fsamp/2),'bandpass');
-y_filt = filtfilt(b,a,y);
 
 %% Drawing script
 
