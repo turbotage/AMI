@@ -1,14 +1,4 @@
-%%
-fn_STR = '181023_1311.mat';
-ndata = 500
-h = matfile(fn_STR);
-rfmat = h.rf_data_set(:,:,1:4000);
-rfmat_downsampled = resample(rfmat,1, 4,'Dimension', 3);
-
-%%
-
-
-%%
+% load DATA
 rfmat_dsf = single(load('181023_1311_rs.mat').rfmat_downsampled);
 
 %%
@@ -20,10 +10,66 @@ clear Bmodes
 
 %%
 % load TVI
-fn_STR = '181023_1311tvi.mat';
+fn_STR = '181023_1311tvi_rs.mat';
 h = matfile(fn_STR);
-tvif = single(h.TVI_MAT(:,:,1:500));
-tvif = sqrt(abs(hilbert(squeeze(tvif(:,:,:)))));
+tvif_d = single(h.tvi_downsampled(:,:,1:1000));
+
+%%
+tvif_d = sqrt(abs(hilbert(squeeze(tvif_d(:,:,:)))));
+
+%%
+
+[b,a] = butter(1, 200/250,'low');
+tvif = filter(b,a,tvif_d,[],3);
+
+%%
+lowi = 0;
+highi = 1;
+frame = 51;
+
+tvi1 = mat2gray(tvif(:,:,frame));
+tvi1a = imbinarize(tvi1,'adaptive','Sensitivity',0.001);
+tvi1b = line_masker(tvi1a, true);
+tvi1a = line_masker(tvi1a, false);
+tvi1b = line_masker2(tvi1b, tvi1a);
+
+tvi2 = regionfill(tvi1,tvi1b);
+
+%tvi1e = and(tvi1a,tvi1b);
+figure;
+subplot(2,1,1);
+imagesc(tvi1a);
+axis('square');
+caxis([0, 1]);
+title('tvi1a')
+
+subplot(2,1,2);
+imagesc(tvi1b);
+axis('square');
+caxis([0, 1]);
+title('tvi1b')
+
+figure;
+subplot(2,1,1);
+imagesc(tvi1);
+axis('square');
+caxis([0, 1]);
+title('tvi1')
+
+subplot(2,1,2);
+imagesc(tvi2);
+axis('square');
+caxis([0, 1]);
+title('tvi2');
+
+%%
+tvi_line_filtered = full_line_filter(tvif);
+
+%%
+figure;
+imagesc(tvi_line_filtered(:,:,1));
+axis('square');
+caxis([0,1])
 
 %%
 [U,S,V] = svd(Bmodes_f, 'econ');
@@ -41,45 +87,7 @@ Bmodes_new = reshape(Bmodes_fnew, shape(1), shape(2), shape(3));
 %animate_stuff(Bmodes_new);
 %%
 
-draw_pic(tvif, Bmodes_new);
-
-function draw_pic(mat1, mat2)
-    lowi = 0.0
-    highi = 0.1
-
-    figure(1);
-    Q = size(mat1,3);
-    W1 = mat1(:,:,1);
-    W1 = mat2gray(W1);
-    %W1 = imadjust(W1, [0,1],[]);
-
-    W2 = mat2(:,:,2);
-    W2 = mat2gray(W2);
-    %W2 = imadjust(W2, [0,1],[]);
+%draw_pic(tvif, Bmodes_new);
+draw_pic2(tvi_line_filtered, Bmodes_new);
 
 
-    subplot(1,2,1);
-    img1 = imshow(W1, [lowi, highi]);
-    axis('square')
-
-    subplot(1,2,2);
-    img2 = imshow(W2, [lowi, highi]);
-    axis('square')
-    
-    pause(2);
-    for K = 2:Q
-        W1 = mat1(:,:,K);
-        W1 = mat2gray(W1);
-        W1 = imadjust(W1, [0,1],[]);
-        W2 = mat2(:,:,K);
-        W2 = mat2gray(W2);
-        W2 = imadjust(W2, [0,1],[]);
-        set(img1, 'CData', W1);
-        set(img2, 'CData', W2);
-        %drawnow limitrate;
-        drawnow();
-        caxis([0,1])
-        pause(0.02);
-        disp(K);
-    end
-end
