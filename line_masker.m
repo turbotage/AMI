@@ -40,8 +40,14 @@ function masked = line_masker(mask, begin)
     end
     
     for i=flip(halflen:len)
-        xpos = xi(i);
-        ypos = yi(i);
+        xpos = 0;
+        ypos = 0;
+        try
+            xpos = xi(i);
+            ypos = yi(i);
+        catch
+            fprintf('i=%d', i);
+        end
 
         if begin && ((xpos<u)&&(xpos>l))
             masked(xpos,ypos) = 0;
