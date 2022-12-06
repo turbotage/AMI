@@ -36,15 +36,33 @@ caxis([0,1])
 
 Snew = S;
 Snew(25:end, 25:end) = 0;
-Snew(1:20,1:20) = 0;
+Snew(1:4,1:4) = 0;
 
 Bmodes_fnew = U * Snew * V';
 Bmodes_new = reshape(Bmodes_fnew, shape(1), shape(2), shape(3));
 
-%figure(1);
-%animate_stuff(Bmodes);
-%figure(2);
-%animate_stuff(Bmodes_new);
+%%
+zmax = size(Bmodes_new,3);
+steplen = round(zmax/5);
+under_step = 1;
+sumbmode = zeros(size(Bmodes_new,1),size(Bmodes_new,2));
+for i=steplen:steplen:zmax
+    sumbmode = sumbmode + std(Bmodes_new(:,:,under_step:i), 0, 3);
+    under_step = under_step + steplen;
+end
+
+%%
+figure;
+imagesc(sumbmode);
+colormap gray;
+axis('square');
+
+figure;
+bmodesum_mask = imbinarize(sumbmode, "adaptive");
+imagesc(bmodesum_mask);
+colormap gray;
+axis('square');
+
 %%
 
 %draw_pic(tvif, Bmodes_new);
@@ -66,12 +84,12 @@ for i=1:size(tvi_line_filtered,3)
 end
 
 %%
-draw_pic2(tvi_line_filtered, after_lf_masks);
+draw_pic2(tviff, after_lf_masks);
 
 %%
 tviffconv = zeros(size(tviff));
 for i=1:size(tviff,3)
-    tviffconv(:,:,i) = conv2(tviff(:,:,i),ones(4,3)/3,'same');
+    tviffconv(:,:,i) = conv2(tviff(:,:,i),ones(4,2)/8,'same');
 end
 %%
 draw_pic2(tviff, tviffconv);
@@ -153,6 +171,13 @@ tlf_pf = ifft(freq_tlf,[],3);
 draw_pic2(tviffconv, tlf_pf);
 
 %%
+tlen = size(tvi_line_filtered, 3);
+zmax = size(tvi_line_filtered, 3);
+xstart = 1200;
+xstop = 1300;
+ystart = 80;
+ystop = 128;
+
 tlf_pf_mean = reshape(mean(mean( ...
     tlf_pf(xstart:xstop,ystart:ystop,:),1),2),[tlen,1]);
 figure;
