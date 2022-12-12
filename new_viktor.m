@@ -1,7 +1,7 @@
 %% load TVI
 h = matfile('181023_1311tvi_rs.mat');
 tvi_dat = single(h.tvi_downsampled(:,:,1:1000));
-tvi_dat = sqrt(abs(hilbert(squeeze(tvi_dat(:,:,:)))));
+%tvi_dat = sqrt(abs(hilbert(squeeze(tvi_dat(:,:,:)))));
 clear h;
 
 %% load SVD
@@ -24,7 +24,7 @@ svd_dat_filtered = svd_filter(svd_dat_filtered, false, false, false, false, true
 %%
 draw_pic2(svd_dat_filtered, svd_dat);
 %%
-svd_hr = run_svd(svd_dat_filtered,0.004,0.1);
+svd_hr = run_svd(svd_dat_filtered,0.002,0.1);
 
 %%
 draw_pic(svd_hr);
@@ -32,9 +32,9 @@ draw_pic(svd_hr);
 %%
 svdsum = var_map(svd_hr,4);
 figure;
-imshow(svdsum);
-axis('square');
-clim([0,max(svdsum,[],[1,2])]);
+imagesc(svdsum);
+%axis('square');
+%clim([0,max(svdsum,[],[1,2])]);
 
 %% TVI
 %% Filter sections for TVI
@@ -55,8 +55,9 @@ draw_pic2(tvi_dat, tvi_dat_filtered);
 %%
 tvisum = var_map(tvi_dat_filtered,4);
 figure;
-imshow(tvisum);
-axis('square');
-clim([0,0.05]);
+imagesc(tvisum);
+
+%axis('square');
+%clim([0,0.01]);
 
 
