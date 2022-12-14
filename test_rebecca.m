@@ -26,12 +26,143 @@ Bmodes_new = reshape(Bmodes_fnew, shape(1), shape(2), shape(3));
 
 %% load dataset 3 voluntary contraction w ~5-25Hz 2-4 muscle complexes
 load("RF_MAT.mat");
-frames=1:250;
-RF_MAT= single(squeeze(RF_MAT(:,:,frames)));
-Bmodes = single(sqrt(abs(hilbert(squeeze(RF_MAT(:,:,frames))))));
+RF_MAT= single(squeeze(RF_MAT(:,:,:)));
+Bmodes = single(sqrt(abs(hilbert(squeeze(RF_MAT(:,:,:))))));
 shape = size(Bmodes);
 RF_MAT_f=reshape(RF_MAT, shape(1)*shape(2), shape(3));
-%% svd
+
+%% H-scan
+% generate kernel of hermitian polynomials of ord 2 and 8
+% with matrices
+b1 = .1;
+b2 = .07;
+fs= 35; %should be for the ultrasound, not 1000;
+T_duration = 50; % microseconds (the time intervall for the GH pulses)
+t = linspace(-T_duration,T_duration,2*T_duration*fs);
+
+GH2=exp(-(t/b1).^2).*(4*(t./b1).^2-2);
+GH2 = GH2./sum(GH2(:));
+[pxx2,f2] = pwelch(GH2, hamming(512));
+f_VECT2 = linspace(0,fs/2,length(pxx2));
+p_NORM2 = 0.5*pxx2./max(pxx2);
+
+GH8=exp(-(t/b2).^2).*((2*(t./b2)).^8-3584*(t./b2).^6+13440*((t./b2).^4-(t./b2).^2)+1680);
+GH8 = GH8./sum(GH8(:));
+[pxx8,f1] = pwelch(GH8,hamming(512));
+f_VECT8 = linspace(0,fs/2,length(pxx8));
+p_NORM8 = 0.5*pxx8./max(pxx8);
+
+E2 = 1*3*sqrt(pi/2);
+E8 = 1*3*5*7*9*11*13*15*sqrt(pi/2);
+
+sgtitle('Gaussian weighted Hermite polynomials')
+subplot(2,1,1)
+plot(t,GH2,'b', 'LineWidth', 1.5);
+title('GH_2')
+ylim([min(GH2,[],'all')*1.25 max(GH2,[],'all')*1.25]);
+subplot(2,1,2)
+plot(t,GH8,'r', 'LineWidth', 1.5);
+title('GH_8')
+ylim([min(GH8,[],'all')*1.25 max(GH8,[],'all')*1.25]);
+
+% Plot one spectrum of one imageline for comparison with the GH spectra
+frame=45;	% out of 500
+line=64;	% out of 128
+
+imLineRF = double(squeeze(RF_MAT(:,line,frame)));
+[pxx,f] = pwelch(imLineRF);
+f_VECT = linspace(0,fs/2,length(f));
+p_NORM = sqrt(pxx)./max(sqrt(pxx));
+
+figure; clf; hold on;
+plot(f_VECT, p_NORM,'-','color',[0 .5 0],'LineWidth', 1.5);
+plot(f_VECT2, p_NORM2, 'b', 'LineWidth', 1.5);
+plot(f_VECT8, p_NORM8, 'r', 'LineWidth', 1.5);
+sgtitle(['PSD for frame ',num2str(frame),' and line ',num2str(line)]);
+xlabel('Frequency f [MHz]'); ylabel('Amplitude A [1]');
+legend({'RF imageline','Low pass (GH2)','High pass (GH8)'});
+ylim([	min([p_NORM2 p_NORM8 p_NORM],[],'all')*1.25...
+		max([p_NORM2 p_NORM8 p_NORM],[],'all')*1.25]);
+
+%% RGB code signal and convolute
+clear RF_MAT2 RF_MAT8
+clear Bmodes2 Bmodes8
+
+% convolution
+noframes=50;
+for j=1:noframes
+	for k=1:128
+		RF_MAT2(:,k,j)=conv(RF_MAT(:,k,j),GH2,'same')./sqrt(E2);
+		RF_MAT8(:,k,j)=conv(RF_MAT(:,k,j),GH8,'same')./sqrt(E8);
+	end
+end
+
+% envelope detection
+Bmodes2=double(sqrt(abs(hilbert(RF_MAT2))));
+Bmodes8=sqrt(abs(hilbert(RF_MAT8)));
+
+% plot H-scan filtering results
+draw_pic(Bmodes(:,:,1:noframes), Bmodes2, Bmodes8, [] , 0.05);
+
+%% Plot rgb signal for 1 line in 1 frame
+% Compute "B-mode" image line = Green channel
+Green_ImLine = sqrt(abs(hilbert(RF_MAT(:,line,frame))));
+
+% Compute H-scan
+% Convolution. This is the "time-domain filtering" procedure using the GH2 and GH8.
+H2 = conv(RF_MAT(:,line,frame), GH2, 'same');
+
+% envelope conversion (I was guessing that this is needed, please double-check)
+H2 = sqrt(abs(hilbert(H2)));
+
+H8 = conv(RF_MAT(:,line,frame), GH8, 'same');
+H8 = sqrt(abs(hilbert(H8)));
+
+Red_ImLine = H8./H2; % Stämmer det? Jag tror dessa varianter användes i någon av artiklarna
+Blue_ImLine = H2./H8; % Stämmer det?
+
+figure; clf; hold on;
+plot(Red_ImLine,'r');
+plot(Blue_ImLine,'b');
+xlabel('Depth (image line time)');
+sgtitle(['Comparison of channels for frame \newline',num2str(frame),' and line ',num2str(line)]);
+legend({'Red channel','Blue channel'});
+
+%% Combination with colorcoding in freq space to RGB and then combined into 
+% a new image RGB colormap R for low freqs, B for high, G for original sig
+% envelope.
+
+% RGB channeling intensites G=signal, B=GH8, R=GH2
+% mymap = [	1 0 0 ;
+%			0 1 0 ;
+%			0 0 1];
+
+% Colorcode in 2D
+Bmodesrgb = zeros(shape(1),shape(2),3,noframes);
+Bmodes2rgb = zeros(shape(1),shape(2),3,noframes);
+Bmodes8rgb = zeros(shape(1),shape(2),3,noframes);
+Bmodestotrgb = zeros(shape(1),shape(2),3,noframes);
+
+for m=1:noframes
+	Bmodesrgb(:,:,:,m)=ind2rgb(squeeze(Bmodes(:,:,m)),'turbo');
+	Bmodes2rgb(:,:,:,m)=ind2rgb(squeeze(Bmodes2(:,:,m)),'turbo');
+	Bmodes8rgb(:,:,:,m)=ind2rgb(squeeze(Bmodes8(:,:,m)),'turbo');
+end
+
+Bmodestotrgb(:,:,2,:)=Bmodesrgb(:,:,2,:);
+Bmodestotrgb(:,:,1,:)=Bmodes8rgb(:,:,1,:);
+Bmodestotrgb(:,:,3,:)=Bmodes2rgb(:,:,3,:);
+
+draw_pic2(Bmodesrgb(:,:,:,:), Bmodestotrgb(:,:,:,:));
+
+%% load TVI (Validation) data
+fn_STR = '181023_1311tvi_rs.mat';
+h = matfile(fn_STR);
+tvif_d = single(h.tvi_downsampled(:,:,1:250));
+tvif_d = sqrt(abs(hilbert(squeeze(tvif_d(:,:,:)))));
+
+%% SVD
+
 Bmodes_f = reshape(Bmodes, shape(1)*shape(2), shape(3));
 [U,S,V] = svd(Bmodes_f, 'econ');
 
@@ -41,83 +172,6 @@ Snew(1:20,1:20) = 0;
 
 Bmodes_fnew = U * Snew * V';
 Bmodes_new = reshape(Bmodes_fnew, shape(1), shape(2), shape(3));
-
-%% H-scan
-% generate kernel of hermitian polynomials of ord 2 and 8
-% with matrices
-b=6;
-a=20;
-fs=1000;
-t = -5:1/fs:5;
-GH2=exp(-(t/b).^2).^2.*(4*t.^2-2).*exp(-t.^2);
-GH8=exp(-(t/a).^2).^2.*((2*t).^8-3584*t.^6+13440*(t.^4-t.^2)+1680).*exp(-t.^2);
-E2 = 1*3*sqrt(pi/2);
-E8 = 1*3*5*7*9*11*13*15*sqrt(pi/2);
-
-figure
-sgtitle('Gaussian weighted Hermite polynomials')
-subplot(2,1,1)
-plot(t,GH2,'.b')
-title('GH_2')
-ylim([min(GH2,[],'all')*1.25 max(GH2,[],'all')*1.25]);
-subplot(2,1,2)
-plot(t,GH8,'.r')
-title('GH_8')
-ylim([min(GH8,[],'all')*1.25 max(GH8,[],'all')*1.25]);
-
-%% fft (envelopes) of original RF signal and filters
-clear B0 B2 B8
-frame=90;
-
-[pxx,f]=pwelch(RF_MAT_f(:,frame));
-[pxx2,f]=pwelch(GH2);
-[pxx8,f]=pwelch(GH8);
-
-figure
-plot(f,pxx,'color',[0 .5 0],'linestyle','-');
-hold on; plot(f,pxx8,'-b');
-hold on; plot(f,pxx2,'-r');
-legend('Original RF-signal','High pass (GH8)','Low pass (GH2)');
-xlabel('Frequency f [Hz]'); ylabel('Power per frequency P [dB/Hz]');
-sgtitle(['PSD for frame ',num2str(frame)])
-legend('Original RF-signal','High pass (GH8)','Low pass (GH2)');
-hold off
-hold off
-
-
-%% RGB code signal and convolute
-clear RF_MAT2 RF_MAT8 
-clear Bmodes2 Bmodes8
-
-% convolution
-noframes=5;
-for j=1:noframes
-	RF_MAT2(:,:,j)=conv2(GH2,RF_MAT(:,:,j))./sqrt(E2);
-	RF_MAT8(:,:,j)=conv2(GH8,RF_MAT(:,:,j))./sqrt(E8);
-	j
-end
-
-% plot H-scan filtering results
-Bmodes2=sqrt(abs(hilbert(RF_MAT2)));
-Bmodes8=sqrt(abs(hilbert(RF_MAT8)));
-
-draw_pic(Bmodes(:,:,1:noframes), Bmodes2, Bmodes8, 0.03);
-
-%% combination with colorcoding in freq space to RGB and then combined into 
-% a new image RGB colormap R for low freqs, B for high, G for original sig
-% envelope.
-
-% RGB channeling intensites G=signal, B=GH8, R=GH2
-% mymap = [	1 0 0 ;
-%			0 1 0 ;
-%			0 0 1];
-% ind2rgb(BmodesTot,mymap)
-
-%% load TVI (Validation) data
-fn_STR = '181023_1311tvi_rs.mat';
-h = matfile(fn_STR);
-tvif_d = single(h.tvi_downsampled(:,:,1:250));
-tvif_d = sqrt(abs(hilbert(squeeze(tvif_d(:,:,:)))));
 
 %% SVD vs TVI 
 % Prefiltering
@@ -135,16 +189,14 @@ tvif_d = sqrt(abs(hilbert(squeeze(tvif_d(:,:,:)))));
 %[b,a] = butter(4,[5 25]./(Fsamp/2),'bandpass');
 %y_filt = filtfilt(b,a,y);
 
-[b,a] = butter(1, 200/250,'low');
-tvif = filter(b,a,tvif_d,[],3);
-Bmodes_new = filter(b,a,Bmodes_new,[],3);
+[b1,b2] = butter(1, 200/250,'low');
+tvif = filter(b1,b2,tvif_d,[],3);
+Bmodes_new = filter(b1,b2,Bmodes_new,[],3);
 
 for j=1:noframes
 	tviff(:,:,j) = medfilt2(tvi_line_filtered(:,:,j));
 	Bmodes_newff(:,:,j) = medfilt2(Bmodes_new(:,:,j));
 end
-
-%%
 
 %%
 tvi_line_filtered = full_line_filter(tvif);
@@ -191,7 +243,6 @@ tvisum_mask = imbinarize(sumtvi, "adaptive", "Sensitivity", 0.001);
 imagesc(tvisum_mask);
 colormap gray;
 axis('square');
-
 
 %%
 % Mean intensity of line filtered
@@ -283,8 +334,8 @@ C = conv2(A, B8);
 % freq filtering
 % idea: bandpass on every pixelintensity over activationtime 5-15(30) Hz
 % for dataset 2 but around 1.5 Hz for dataset 3
-[b,a] = butter(4,[5 25]./(Fsamp/2),'bandpass');
-y_filt = filtfilt(b,a,y);
+[b1,b2] = butter(4,[5 25]./(Fsamp/2),'bandpass');
+y_filt = filtfilt(b1,b2,y);
 
 %% Drawing script
 % mask method
@@ -442,7 +493,7 @@ function masked = line_masker2(mask1, mask2)
     end
 end
 
-function draw_pic(mat1, mat2, mat3, delay)
+function draw_pic(mat1, mat2, mat3, mat4, delay)
     lowi = 0.0;
     highi = 0.1;
 
@@ -450,48 +501,58 @@ function draw_pic(mat1, mat2, mat3, delay)
     Q = size(mat1,3);
 
     W1 = mat1(:,:,1);
-    W1 = mat2gray(W1);
 
     W2 = mat2(:,:,1);
-    W2 = mat2gray(W2);
 
 	W3 = mat3(:,:,1);
-	W3 = mat2gray(W3);
+	
+	if mat4
+		W4 = mat4(:,:,1);
+		W4 = mat2gray(W4);
+	end
 
 	% Maximize window.
 	g = gcf;
 	g.WindowState = 'maximized';
 	drawnow;
 
-    subplot(1,3,1);
-    img1 = imshow(W1, [lowi, highi]);
-    axis('square')
+    subplot(2,2,1);
+    img1 = imagesc(W1, [lowi, highi]);
 
-    subplot(1,3,2);
-    img2 = imshow(W2, [lowi, highi]);
-    axis('square')
+    subplot(2,2,2);
+    img2 = imagesc(W2, [lowi, highi]);
 
-	subplot(1,3,3);
-    img3 = imshow(W3, [lowi, highi]);
-    axis('square')
+	subplot(2,2,3);
+    img3 = imagesc(W3, [lowi, highi]);
+	colorbar;
+
+	if mat4
+		subplot(2,2,4);
+		img4 = imagesc(W4, [lowi, highi]);
+	end
 
     pause(2);
     for K = 2:Q
         W1 = mat1(:,:,K);
-        W1 = mat2gray(W1);
         W1 = imadjust(W1, [0,1],[]);
 
         W2 = mat2(:,:,K);
-        W2 = mat2gray(W2);
         W2 = imadjust(W2, [0,1],[]);
 		
 		W3 = mat3(:,:,K);
-        W3 = mat2gray(W3);
         W3 = imadjust(W3, [0,1],[]);
+
+		if mat4
+			W4 = mat4(:,:,K);
+			W4 = imadjust(W4, [0,1],[]);
+		end
 
         set(img1, 'CData', W1);
         set(img2, 'CData', W2);
 		set(img3, 'CData', W3);
+		if mat4
+			set(img3, 'CData', W4);
+		end
         %drawnow limitrate;
         drawnow();
         caxis([0,1])
@@ -505,13 +566,11 @@ function draw_pic2(mat1, mat2)
     highi = 0.1;
 
     figure(1);
-    Q = size(mat1,3);
-    W1 = mat1(:,:,1);
-    W1 = mat2gray(W1);
+    Q = size(mat1,4);
+    W1 = mat1(:,:,:,1);
     %W1 = imadjust(W1, [0,1],[]);
 
-    W2 = mat2(:,:,2);
-    W2 = mat2gray(W2);
+    W2 = mat2(:,:,:,2);
     %W2 = imadjust(W2, [0,1],[]);
 
 
@@ -525,11 +584,9 @@ function draw_pic2(mat1, mat2)
     
     pause(2);
     for K = 2:Q
-        W1 = mat1(:,:,K);
-        W1 = mat2gray(W1);
+        W1 = mat1(:,:,:,K);
         W1 = imadjust(W1, [0,1],[]);
-        W2 = mat2(:,:,K);
-        W2 = mat2gray(W2);
+        W2 = mat2(:,:,:,K);
         W2 = imadjust(W2, [0,1],[]);
         set(img1, 'CData', W1);
         set(img2, 'CData', W2);
