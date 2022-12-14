@@ -39,7 +39,7 @@ function masked = line_masker(mask, begin)
         end
     end
     
-    for i=flip(halflen:len)
+    for i=flip(max(halflen,1):len)
         xpos = 0;
         ypos = 0;
         try
