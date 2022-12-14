@@ -48,11 +48,9 @@ Bmodes_new = reshape(Bmodes_fnew, shape(1), shape(2), shape(3));
 b=6;
 a=20;
 fs=1000;
-t = -5:1/fs:5;
+t = 0:1/fs:1;
 GH2=exp(-(t/b).^2).^2.*(4*t.^2-2).*exp(-t.^2);
 GH8=exp(-(t/a).^2).^2.*((2*t).^8-3584*t.^6+13440*(t.^4-t.^2)+1680).*exp(-t.^2);
-E2 = 1*3*sqrt(pi/2);
-E8 = 1*3*5*7*9*11*13*15*sqrt(pi/2);
 
 figure
 sgtitle('Gaussian weighted Hermite polynomials')
@@ -69,17 +67,17 @@ ylim([min(GH8,[],'all')*1.25 max(GH8,[],'all')*1.25]);
 clear B0 B2 B8
 frame=90;
 
-[pxx,f]=pwelch(RF_MAT_f(:,frame));
-[pxx2,f]=pwelch(GH2);
-[pxx8,f]=pwelch(GH8);
+[pxx,f]=pwelch(RF_MAT_f(:,frame),fs);
+[pxx2,f2]=pwelch(GH2);
+[pxx8,f8]=pwelch(GH8);
 
 figure
-plot(f,pxx,'color',[0 .5 0],'linestyle','-');
-hold on; plot(f,pxx8,'-b');
-hold on; plot(f,pxx2,'-r');
+plot(f,pxx,'color',[0 .5 0],'linestyle','-');hold on;
+plot(f8,pxx8,'-b');hold on;
+plot(f2,pxx2,'-r');
 legend('Original RF-signal','High pass (GH8)','Low pass (GH2)');
 xlabel('Frequency f [Hz]'); ylabel('Power per frequency P [dB/Hz]');
-sgtitle(['PSD for frame ',num2str(frame)])
+sgtitle(['Envelopes for frame ',num2str(frame)])
 legend('Original RF-signal','High pass (GH8)','Low pass (GH2)');
 hold off
 hold off
@@ -90,6 +88,9 @@ clear RF_MAT2 RF_MAT8
 clear Bmodes2 Bmodes8
 
 % convolution
+E2 = 1*3*sqrt(pi/2);
+E8 = 1*3*5*7*9*11*13*15*sqrt(pi/2);
+
 noframes=5;
 for j=1:noframes
 	RF_MAT2(:,:,j)=conv2(GH2,RF_MAT(:,:,j))./sqrt(E2);
@@ -98,19 +99,19 @@ for j=1:noframes
 end
 
 % plot H-scan filtering results
-Bmodes2=sqrt(abs(hilbert(RF_MAT2)));
-Bmodes8=sqrt(abs(hilbert(RF_MAT8)));
+Bmodes2 = sqrt(abs(hilbert(squeeze(RF_MAT2(:,:,1:noframes)))));
+Bmodes8 = sqrt(abs(hilbert(squeeze(RF_MAT8(:,:,1:noframes)))));
 
 draw_pic(Bmodes(:,:,1:noframes), Bmodes2, Bmodes8, 0.03);
 
-%% combination with colorcoding in freq space to RGB and then combined into 
+% combination with colorcoding in freq space to RGB and then combined into 
 % a new image RGB colormap R for low freqs, B for high, G for original sig
 % envelope.
 
 % RGB channeling intensites G=signal, B=GH8, R=GH2
-% mymap = [	1 0 0 ;
-%			0 1 0 ;
-%			0 0 1];
+% mymap = [	1 0 0	 ;
+%			0 1 0	;
+%			0 0 1	];
 % ind2rgb(BmodesTot,mymap)
 
 %% load TVI (Validation) data
