@@ -9,7 +9,7 @@
 % --------
 frame = 10; % Chose a frame, for dataset 1 one is sufficient for the report.
 line = 64; % Image line = 64 out or 128
-load('C:\Users\Rebecca Viklund\Desktop\AMI project\AMI\Dataset_1\CG_rest_2_omg2.mat');
+load('C:\Users\revi0014\Desktop\AMI\Dataset_1\CG_rest_2_omg2.mat');
 
 % ----------------------
 % Pre-processing of data
@@ -44,21 +44,25 @@ Fs = 35; % MHz Samplingfreq of the US not the signal
 T_duration = 10; % microseconds (the time intervall for the GH pulses)
 t = linspace(-T_duration,T_duration,2*T_duration*Fs);
 
-b1 = 0.08;
-H2 = (4.*(t./b1).^2 - 2);
-GH2 = exp(-(t./(b1)).^2).*H2;
-GH2 = GH2./sum(GH2(:));
-[pxx2,f2] = pwelch(GH2, hamming(512));
-f_VECT2 = linspace(0,Fs/2,length(pxx2));
-p_NORM2 = 0.5*pxx2./max(pxx2);
+% GH low pass
+b1 = 0.13;
+ordlo = 8;
+Hlo = hermiteH(ordlo, t./b1);
+GHlo = exp(-(t./(b1)).^2).*Hlo;
+GHlo = GHlo./sum(GHlo(:));
+[pxx2,f2] = pwelch(GHlo, hamming(512));
+f_VECTlo = linspace(0,Fs/2,length(pxx2));
+p_NORMlo = 0.5*pxx2./max(pxx2);
 
-b2 = 0.07;
-H8 = (256.*(t./b2).^8 - 3584.*(t./b2).^6 + 13440.*(t./b2).^4 - 13440.*(t./b2).^2 + 1680);
-GH8 = exp(-(t./(b2)).^2).*H8;
-GH8 = GH8./sum(GH8(:));
-[pxx8,f1] = pwelch(GH8,hamming(512));
-f_VECT8 = linspace(0,Fs/2,length(pxx8));
-p_NORM8 = 0.5*pxx8./max(pxx8);
+% GH high pass
+b2 = 0.135;
+ordhi = 32;
+Hhi = hermiteH(32, t./b2); % order 32
+GHhi = exp(-(t./(b2)).^2).*Hhi;
+GHhi = GHhi./sum(GHhi(:));
+[pxx8,f1] = pwelch(GHhi,hamming(512));
+f_VECThi = linspace(0,Fs/2,length(pxx8));
+p_NORMhi = 0.5*pxx8./max(pxx8);
 
 % Plot one spectrum of one imageline for comparison with the GH spectra
 imLineRF = double(squeeze(RF(:,line))); 
@@ -68,28 +72,28 @@ p_NORM = sqrt(pxx)./max(sqrt(pxx));
 
 figure(1);
 subplot(2,1,1)
-plot(t,GH2,'b', 'LineWidth', 1.5);
-title('GH_2')
-ylim([min(GH2,[],'all')*1.25 max(GH2,[],'all')*1.25]);
+plot(t,GHlo,'b', 'LineWidth', 1.5);
+title(['GH_{',num2str(ordlo),'}'])
+ylim([min(GHlo,[],'all')*1.25 max(GHlo,[],'all')*1.25]);
 subplot(2,1,2)
-plot(t,GH8,'r', 'LineWidth', 1.5);
-title('GH_8')
-ylim([min(GH8,[],'all')*1.25 max(GH8,[],'all')*1.25]);
+plot(t,GHhi,'r', 'LineWidth', 1.5);
+title(['GH_{',num2str(ordhi),'}'])
+ylim([min(GHhi,[],'all')*1.25 max(GHhi,[],'all')*1.25]);
 sgtitle('Gaussian weighted Hermite polynomials')
 
 figure(2); clf; hold on;
 plot(f_VECT, p_NORM,'-','color',[0 .5 0],'LineWidth', 1.5);
-plot(f_VECT2, p_NORM2, 'b', 'LineWidth', 1.5);
-plot(f_VECT8, p_NORM8, 'r', 'LineWidth', 1.5);
+plot(f_VECTlo, p_NORMlo, 'b', 'LineWidth', 1.5);
+plot(f_VECThi, p_NORMhi, 'r', 'LineWidth', 1.5);
 sgtitle(['PSD for frame ',num2str(frame),' and line ',num2str(line)]);
 xlabel('Frequency f [MHz]'); ylabel('Amplitude A [1]');
-legend({'RF imageline','Low pass (GH2)','High pass (GH8)'});
-ylim([	min([p_NORM2 p_NORM8 p_NORM],[],'all')*1.25...
-		max([p_NORM2 p_NORM8 p_NORM],[],'all')*1.25]);
+legend({'RF imageline','Low pass','High pass'});
+ylim([	min([p_NORMlo p_NORMhi p_NORM],[],'all')*1.25...
+		max([p_NORMlo p_NORMhi p_NORM],[],'all')*1.25]);
 
 % computing analytic energies for conv
-E2 = 1*3*sqrt(pi/2);
-E8 = 1*3*5*7*9*11*13*15*sqrt(pi/2);
+Elo=prod(1:2:(2*ordlo-1))*sqrt(pi/2);
+Ehi=prod(1:2:(2*ordhi-1))*sqrt(pi/2);
 
 %% ----------------------------
 % 1D H-scan conv and rgb encoding
@@ -99,15 +103,15 @@ Green_ImLine = sqrt(abs(hilbert(imLineRF)));
 
 % Compute H-scan
 % Convolution. This is the "time-domain filtering" procedure using the GH2 and GH8.
-H2 = conv(imLineRF, GH2, 'same'); % Note: 'same' argument is important
-H8 = conv(imLineRF, GH8, 'same');
+Hlo = conv(imLineRF, GHlo, 'same'); % Note: 'same' argument is important
+Hhi = conv(imLineRF, GHhi, 'same');
 
 % Envelope conversion (I was guessing that this is needed, please double-check)
-H2 = sqrt(abs(hilbert(H2)));
-H8 = sqrt(abs(hilbert(H8)));
+Hlo = sqrt(abs(hilbert(Hlo)));
+Hhi = sqrt(abs(hilbert(Hhi)));
 
-Red_ImLine = H2./H8; % Stämmer det? Jag tror dessa varianter användes i någon av artiklarna
-Blue_ImLine = H8./H2; % Stämmer det?
+Red_ImLine = Hlo./Hhi; % Stämmer det? Jag tror dessa varianter användes i någon av artiklarna
+Blue_ImLine = Hhi./Hlo; % Stämmer det?
 
 figure(3); clf; hold on;
 plot(Red_ImLine,'r');
@@ -124,8 +128,8 @@ clear Bmodes2 Bmodes8
 
 % convolution
 for k=1:128
-	RF2(:,k)=conv(RF(:,k),GH2,'same')./sqrt(E2);
-	RF8(:,k)=conv(RF(:,k),GH8,'same')./sqrt(E8);
+	RF2(:,k)=conv(RF(:,k),GHlo,'same')./sqrt(Elo);
+	RF8(:,k)=conv(RF(:,k),GHhi,'same')./sqrt(Ehi);
 end
 
 % envelope detection
@@ -144,8 +148,8 @@ Bmodesrgb8 = zeros(shape(1),shape(2),3);
 BmodesrgbHr(:,:,1) = Bmodes8(:,:)./mean2(Bmodes8(:,:));
 BmodesrgbHr(:,:,3) = Bmodes2(:,:)./mean2(Bmodes2(:,:));
 Bmodesrgb(:,:,2) = Bmodes(:,:)./mean2(Bmodes(:,:));
-Bmodesrgb8(:,:,1,:)=BmodesrgbHr(:,:,1,:);
-Bmodesrgb2(:,:,3,:)=BmodesrgbHr(:,:,3,:);
+Bmodesrgb8(:,:,1,:) = BmodesrgbHr(:,:,1,:);
+Bmodesrgb2(:,:,3,:) = BmodesrgbHr(:,:,3,:);
 
 %% plot 2D colorcoded H-scan filtering results
 draw_pic(Bmodesrgb,Bmodesrgb2,Bmodesrgb8,BmodesrgbHr,0.05,5);
@@ -158,7 +162,7 @@ draw_pic2(Bmodes,BmodesrgbHr,0.05,6);
 % --------
 frame = 10; % Chose a frame, for dataset 1 one is sufficient for the report.
 line=64; % Image line = 64 out or 128
-load('C:\Users\Rebecca Viklund\Desktop\AMI project\AMI\Dataset_1\CG_contraction_1_omg2.mat');
+load('C:\Users\revi0014\Desktop\AMI\Dataset_1\CG_contraction_1_omg2.mat');
 
 % ----------------------
 % Pre-processing of data
@@ -194,20 +198,20 @@ T_duration = 10; % microseconds (the time intervall for the GH pulses)
 t = linspace(-T_duration,T_duration,2*T_duration*Fs);
 
 b1 = 0.08;
-H2 = (4.*(t./b1).^2 - 2);
-GH2 = exp(-(t./(b1)).^2).*H2;
-GH2 = GH2./sum(GH2(:));
-[pxx2,f2] = pwelch(GH2, hamming(512));
-f_VECT2 = linspace(0,Fs/2,length(pxx2));
-p_NORM2 = 0.5*pxx2./max(pxx2);
+Hlo = (4.*(t./b1).^2 - 2);
+GHlo = exp(-(t./(b1)).^2).*Hlo;
+GHlo = GHlo./sum(GHlo(:));
+[pxx2,f2] = pwelch(GHlo, hamming(512));
+f_VECTlo = linspace(0,Fs/2,length(pxx2));
+p_NORMlo = 0.5*pxx2./max(pxx2);
 
 b2 = 0.07;
-H8 = (256.*(t./b2).^8 - 3584.*(t./b2).^6 + 13440.*(t./b2).^4 - 13440.*(t./b2).^2 + 1680);
-GH8 = exp(-(t./(b2)).^2).*H8;
-GH8 = GH8./sum(GH8(:));
-[pxx8,f1] = pwelch(GH8,hamming(512));
-f_VECT8 = linspace(0,Fs/2,length(pxx8));
-p_NORM8 = 0.5*pxx8./max(pxx8);
+Hhi = (256.*(t./b2).^8 - 3584.*(t./b2).^6 + 13440.*(t./b2).^4 - 13440.*(t./b2).^2 + 1680);
+GHhi = exp(-(t./(b2)).^2).*Hhi;
+GHhi = GHhi./sum(GHhi(:));
+[pxx8,f1] = pwelch(GHhi,hamming(512));
+f_VECThi = linspace(0,Fs/2,length(pxx8));
+p_NORMhi = 0.5*pxx8./max(pxx8);
 
 % Plot one spectrum of one imageline for comparison with the GH spectra
 imLineRF = double(squeeze(RF(:,line))); 
@@ -217,13 +221,13 @@ p_NORM = 0.5*pxx./max(pxx);
 
 figure(7); clf; hold on;
 plot(f_VECT, p_NORM,'-','color',[0 .5 0],'LineWidth', 1.5);
-plot(f_VECT2, p_NORM2, 'b', 'LineWidth', 1.5);
-plot(f_VECT8, p_NORM8, 'r', 'LineWidth', 1.5);
+plot(f_VECTlo, p_NORMlo, 'b', 'LineWidth', 1.5);
+plot(f_VECThi, p_NORMhi, 'r', 'LineWidth', 1.5);
 sgtitle(['PSD for frame ',num2str(frame),' and line ',num2str(line)]);
 xlabel('Frequency f [MHz]'); ylabel('Amplitude A [1]');
 legend({'RF imageline','Low pass (GH2)','High pass (GH8)'});
-ylim([	min([p_NORM2 p_NORM8 p_NORM],[],'all')*1.25...
-		max([p_NORM2 p_NORM8 p_NORM],[],'all')*1.25]);
+ylim([	min([p_NORMlo p_NORMhi p_NORM],[],'all')*1.25...
+		max([p_NORMlo p_NORMhi p_NORM],[],'all')*1.25]);
 
 % computing analytic energies for conv
 E2 = 1*3*sqrt(pi/2);
@@ -237,15 +241,15 @@ Green_ImLine = sqrt(abs(hilbert(imLineRF)));
 
 % Compute H-scan
 % Convolution. This is the "time-domain filtering" procedure using the GH2 and GH8.
-H2 = conv(imLineRF, GH2, 'same'); % Note: 'same' argument is important
-H8 = conv(imLineRF, GH8, 'same');
+Hlo = conv(imLineRF, GHlo, 'same'); % Note: 'same' argument is important
+Hhi = conv(imLineRF, GHhi, 'same');
 
 % Envelope conversion (I was guessing that this is needed, please double-check)
-H2 = sqrt(abs(hilbert(H2)));
-H8 = sqrt(abs(hilbert(H8)));
+Hlo = sqrt(abs(hilbert(Hlo)));
+Hhi = sqrt(abs(hilbert(Hhi)));
 
-Red_ImLine = H2./H8; % Stämmer det? Jag tror dessa varianter användes i någon av artiklarna
-Blue_ImLine = H8./H2; % Stämmer det?
+Red_ImLine = Hlo./Hhi; % Stämmer det? Jag tror dessa varianter användes i någon av artiklarna
+Blue_ImLine = Hhi./Hlo; % Stämmer det?
 
 figure(8); clf; hold on;
 plot(Red_ImLine,'r');
@@ -262,8 +266,8 @@ clear Bmodes2 Bmodes8
 
 % convolution
 for k=1:128
-	RF2(:,k)=conv(RF(:,k),GH2,'same')./sqrt(E2);
-	RF8(:,k)=conv(RF(:,k),GH8,'same')./sqrt(E8);
+	RF2(:,k)=conv(RF(:,k),GHlo,'same')./sqrt(E2);
+	RF8(:,k)=conv(RF(:,k),GHhi,'same')./sqrt(E8);
 end
 
 % envelope detection
@@ -337,6 +341,7 @@ shape = size(Bmodes);
 % SVD 3 - Viktors part
 %-----------------------
 
+
 % ---------------------
 % H-scan 3
 %-----------------------
@@ -350,17 +355,17 @@ fs= 35; %should be for the ultrasound, not 1000;
 T_duration = 50; % microseconds (the time intervall for the GH pulses)
 t = linspace(-T_duration,T_duration,2*T_duration*fs);
 
-GH2=exp(-(t/b1).^2).*(4*(t./b1).^2-2);
-GH2 = GH2./sum(GH2(:));
-[pxx2,f2] = pwelch(GH2, hamming(512));
-f_VECT2 = linspace(0,fs/2,length(pxx2));
-p_NORM2 = 0.5*pxx2./max(pxx2);
+GHlo=exp(-(t/b1).^2).*(4*(t./b1).^2-2);
+GHlo = GHlo./sum(GHlo(:));
+[pxx2,f2] = pwelch(GHlo, hamming(512));
+f_VECTlo = linspace(0,fs/2,length(pxx2));
+p_NORMlo = 0.5*pxx2./max(pxx2);
 
-GH8=exp(-(t/b2).^2).*((2*(t./b2)).^8-3584*(t./b2).^6+13440*((t./b2).^4-(t./b2).^2)+1680);
-GH8 = GH8./sum(GH8(:));
-[pxx8,f1] = pwelch(GH8,hamming(512));
-f_VECT8 = linspace(0,fs/2,length(pxx8));
-p_NORM8 = 0.5*pxx8./max(pxx8);
+GHhi=exp(-(t/b2).^2).*((2*(t./b2)).^8-3584*(t./b2).^6+13440*((t./b2).^4-(t./b2).^2)+1680);
+GHhi = GHhi./sum(GHhi(:));
+[pxx8,f1] = pwelch(GHhi,hamming(512));
+f_VECThi = linspace(0,fs/2,length(pxx8));
+p_NORMhi = 0.5*pxx8./max(pxx8);
 
 imLineRF = double(squeeze(RF_MAT(:,line,frame)));
 [pxx,f] = pwelch(imLineRF);
@@ -369,13 +374,13 @@ p_NORM = sqrt(pxx)./max(sqrt(pxx));
 
 figure(7); clf; hold on;
 plot(f_VECT, p_NORM,'-','color',[0 .5 0],'LineWidth', 1.5);
-plot(f_VECT2, p_NORM2, 'b', 'LineWidth', 1.5);
-plot(f_VECT8, p_NORM8, 'r', 'LineWidth', 1.5);
+plot(f_VECTlo, p_NORMlo, 'b', 'LineWidth', 1.5);
+plot(f_VECThi, p_NORMhi, 'r', 'LineWidth', 1.5);
 sgtitle(['PSD for frame ',num2str(frame),' and line ',num2str(line)]);
 xlabel('Frequency f [MHz]'); ylabel('Amplitude A [1]');
 legend({'RF imageline','Low pass (GH2)','High pass (GH8)'});
-ylim([	min([p_NORM2 p_NORM8 p_NORM],[],'all')*1.25...
-		max([p_NORM2 p_NORM8 p_NORM],[],'all')*1.25]);
+ylim([	min([p_NORMlo p_NORMhi p_NORM],[],'all')*1.25...
+		max([p_NORMlo p_NORMhi p_NORM],[],'all')*1.25]);
 
 % computing analytic energies for convolutions
 E2 = 1*3*sqrt(pi/2);
@@ -389,15 +394,15 @@ Green_ImLine = sqrt(abs(hilbert(RF_MAT(:,line,frame))));
 
 % Compute H-scan
 % Convolution. This is the "time-domain filtering" procedure using the GH2 and GH8.
-H2 = conv(RF_MAT(:,line,frame), GH2, 'same')./sqrt(E2);
-H8 = conv(RF_MAT(:,line,frame), GH8, 'same')./sqrt(E8);
+Hlo = conv(RF_MAT(:,line,frame), GHlo, 'same')./sqrt(E2);
+Hhi = conv(RF_MAT(:,line,frame), GHhi, 'same')./sqrt(E8);
 
 % envelope conversion (I was guessing that this is needed, please double-check)
-H2 = sqrt(abs(hilbert(H2)));
-H8 = sqrt(abs(hilbert(H8)));
+Hlo = sqrt(abs(hilbert(Hlo)));
+Hhi = sqrt(abs(hilbert(Hhi)));
 
-Red_ImLine = H2./H8; % Stämmer det? Jag tror dessa varianter användes i någon av artiklarna
-Blue_ImLine = H8./H2; % Stämmer det?
+Red_ImLine = Hlo./Hhi; % Stämmer det? Jag tror dessa varianter användes i någon av artiklarna
+Blue_ImLine = Hhi./Hlo; % Stämmer det?
 
 figure(8); clf; hold on;
 plot(Red_ImLine,'r');
@@ -416,8 +421,8 @@ noframes=50;
 % convolution
 for j=1:noframes
 	for k=1:128
-		RF_MAT2(:,k,j)=conv(RF_MAT(:,k,j),GH2,'same')./sqrt(E2);
-		RF_MAT8(:,k,j)=conv(RF_MAT(:,k,j),GH8,'same')./sqrt(E8);
+		RF_MAT2(:,k,j)=conv(RF_MAT(:,k,j),GHlo,'same')./sqrt(E2);
+		RF_MAT8(:,k,j)=conv(RF_MAT(:,k,j),GHhi,'same')./sqrt(E8);
 	end
 end
 
