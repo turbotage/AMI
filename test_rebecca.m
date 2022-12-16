@@ -9,7 +9,7 @@
 % --------
 frame = 10; % Chose a frame, for dataset 1 one is sufficient for the report.
 line = 64; % Image line = 64 out or 128
-load('C:\Users\revi0014\Desktop\AMI\Dataset_1\CG_rest_2_omg2.mat');
+load('C:\Users\Rebecca Viklund\Desktop\AMI project\AMI\Dataset_1\CG_rest_2_omg2.mat');
 
 % ----------------------
 % Pre-processing of data
@@ -158,7 +158,7 @@ draw_pic2(Bmodes,BmodesrgbHr,0.05,6);
 % --------
 frame = 10; % Chose a frame, for dataset 1 one is sufficient for the report.
 line=64; % Image line = 64 out or 128
-load('C:\Users\revi0014\Desktop\AMI\Dataset_1\CG_contraction_1_omg2.mat');
+load('C:\Users\Rebecca Viklund\Desktop\AMI project\AMI\Dataset_1\CG_contraction_1_omg2.mat');
 
 % ----------------------
 % Pre-processing of data
