@@ -9,7 +9,7 @@
 % --------
 frame = 10; % Chose a frame, for dataset 1 one is sufficient for the report.
 line = 64; % Image line = 64 out or 128
-load('C:\Users\revi0014\Desktop\AMI\Dataset_1\CG_rest_2_omg2.mat');
+load('C:\Users\Rebecca Viklund\Desktop\AMI project\AMI\Dataset_1\CG_rest_2_omg2.mat');
 
 % ----------------------
 % Pre-processing of data
@@ -50,9 +50,9 @@ ordlo = 8;
 Hlo = hermiteH(ordlo, t./b1);
 GHlo = exp(-(t./(b1)).^2).*Hlo;
 GHlo = GHlo./sum(GHlo(:));
-[pxx2,f2] = pwelch(GHlo, hamming(512));
-f_VECTlo = linspace(0,Fs/2,length(pxx2));
-p_NORMlo = 0.5*pxx2./max(pxx2);
+[pxxlo,flo] = pwelch(GHlo, hamming(512));
+f_VECTlo = linspace(0,Fs/2,length(pxxlo));
+p_NORMlo = 0.5*pxxlo./max(pxxlo);
 
 % GH high pass
 b2 = 0.135;
@@ -60,9 +60,9 @@ ordhi = 32;
 Hhi = hermiteH(32, t./b2); % order 32
 GHhi = exp(-(t./(b2)).^2).*Hhi;
 GHhi = GHhi./sum(GHhi(:));
-[pxx8,f1] = pwelch(GHhi,hamming(512));
-f_VECThi = linspace(0,Fs/2,length(pxx8));
-p_NORMhi = 0.5*pxx8./max(pxx8);
+[pxxhi,fhi] = pwelch(GHhi,hamming(512));
+f_VECThi = linspace(0,Fs/2,length(pxxhi));
+p_NORMhi = 0.5*pxxhi./max(pxxhi);
 
 % Plot one spectrum of one imageline for comparison with the GH spectra
 imLineRF = double(squeeze(RF(:,line))); 
@@ -123,36 +123,42 @@ legend({'Red channel','Blue channel'});
 %% ---------------------------
 % 2D H-scan conv and rgb encoding
 %-----------------------------
-clear RF2 RF8
-clear Bmodes2 Bmodes8
+clear RFlo RFhi
+clear Bmodeslo Bmodeshi
 
 % convolution
 for k=1:128
-	RF2(:,k)=conv(RF(:,k),GHlo,'same')./sqrt(Elo);
-	RF8(:,k)=conv(RF(:,k),GHhi,'same')./sqrt(Ehi);
+	RFlo(:,k)=conv(RF(:,k),GHlo,'same')./sqrt(Elo);
+	RFhi(:,k)=conv(RF(:,k),GHhi,'same')./sqrt(Ehi);
 end
 
 % envelope detection
-Bmodes2=sqrt(abs(hilbert(RF2)));
-Bmodes8=sqrt(abs(hilbert(RF8)));
+Bmodeslo=sqrt(abs(hilbert(RFlo)));
+Bmodeshi=sqrt(abs(hilbert(RFhi)));
 
 %% plot H-scan filtering results
-draw_pic(Bmodes(:,:), Bmodes2, Bmodes8, [] , 0.05,4);
+draw_pic(Bmodes(:,:), Bmodeslo, Bmodeshi, [] , 0.05,4);
 
 %% rb colorcoding
 BmodesrgbHr = zeros(shape(1),shape(2),3);
 Bmodesrgb = zeros(shape(1),shape(2),3);
-Bmodesrgb2 = zeros(shape(1),shape(2),3);
-Bmodesrgb8 = zeros(shape(1),shape(2),3);
+Bmodesrgblo = zeros(shape(1),shape(2),3);
+Bmodesrgbhi = zeros(shape(1),shape(2),3);
 
-BmodesrgbHr(:,:,1) = Bmodes8(:,:)./mean2(Bmodes8(:,:));
-BmodesrgbHr(:,:,3) = Bmodes2(:,:)./mean2(Bmodes2(:,:));
+BmodesrgbHr(:,:,1) = Bmodeshi(:,:)./mean2(Bmodeshi(:,:));
+BmodesrgbHr(:,:,3) = Bmodeslo(:,:)./mean2(Bmodeslo(:,:));
 Bmodesrgb(:,:,2) = Bmodes(:,:)./mean2(Bmodes(:,:));
-Bmodesrgb8(:,:,1,:) = BmodesrgbHr(:,:,1,:);
-Bmodesrgb2(:,:,3,:) = BmodesrgbHr(:,:,3,:);
+
+Bmodesrgbhi(:,:,1,:) = BmodesrgbHr(:,:,1,:);
+Bmodesrgblo(:,:,3,:) = BmodesrgbHr(:,:,3,:);
+
+BmodesrgbHr = resRed(BmodesrgbHr);
+Bmodesrgb = resRed(Bmodesrgb);
+Bmodesrgbhi = resRed(Bmodesrgbhi);
+Bmodesrgblo = resRed(Bmodesrgblo);
 
 %% plot 2D colorcoded H-scan filtering results
-draw_pic(Bmodesrgb,Bmodesrgb2,Bmodesrgb8,BmodesrgbHr,0.05,5);
+draw_pic(Bmodesrgb,Bmodesrgblo,Bmodesrgbhi,BmodesrgbHr,0.05,5);
 
 %% plot comparison between B-mode and H-scan
 draw_pic2(Bmodes,BmodesrgbHr,0.05,6);
@@ -162,7 +168,7 @@ draw_pic2(Bmodes,BmodesrgbHr,0.05,6);
 % --------
 frame = 10; % Chose a frame, for dataset 1 one is sufficient for the report.
 line=64; % Image line = 64 out or 128
-load('C:\Users\revi0014\Desktop\AMI\Dataset_1\CG_contraction_1_omg2.mat');
+load('C:\Users\Rebecca Viklund\Desktop\AMI project\AMI\Dataset_1\CG_contraction_1_omg2.mat');
 
 % ----------------------
 % Pre-processing of data
@@ -193,45 +199,60 @@ Bmodes = single(sqrt(abs(hilbert(squeeze(RF(:,:,:))))));
 % ----------------------
 % H-scan 1b
 %-----------------------
-Fs = 35; %MHz Samplingfreq of the US not the signal
+Fs = 35; % MHz Samplingfreq of the US not the signal
 T_duration = 10; % microseconds (the time intervall for the GH pulses)
 t = linspace(-T_duration,T_duration,2*T_duration*Fs);
 
-b1 = 0.08;
-Hlo = (4.*(t./b1).^2 - 2);
+% GH low pass
+b1 = 0.13;
+ordlo = 8;
+Hlo = hermiteH(ordlo, t./b1);
 GHlo = exp(-(t./(b1)).^2).*Hlo;
 GHlo = GHlo./sum(GHlo(:));
-[pxx2,f2] = pwelch(GHlo, hamming(512));
-f_VECTlo = linspace(0,Fs/2,length(pxx2));
-p_NORMlo = 0.5*pxx2./max(pxx2);
+[pxxlo,flo] = pwelch(GHlo, hamming(512));
+f_VECTlo = linspace(0,Fs/2,length(pxxlo));
+p_NORMlo = 0.5*pxxlo./max(pxxlo);
 
-b2 = 0.07;
-Hhi = (256.*(t./b2).^8 - 3584.*(t./b2).^6 + 13440.*(t./b2).^4 - 13440.*(t./b2).^2 + 1680);
+% GH high pass
+b2 = 0.135;
+ordhi = 32;
+Hhi = hermiteH(32, t./b2); % order 32
 GHhi = exp(-(t./(b2)).^2).*Hhi;
 GHhi = GHhi./sum(GHhi(:));
-[pxx8,f1] = pwelch(GHhi,hamming(512));
-f_VECThi = linspace(0,Fs/2,length(pxx8));
-p_NORMhi = 0.5*pxx8./max(pxx8);
+[pxxhi,fhi] = pwelch(GHhi,hamming(512));
+f_VECThi = linspace(0,Fs/2,length(pxxhi));
+p_NORMhi = 0.5*pxxhi./max(pxxhi);
 
 % Plot one spectrum of one imageline for comparison with the GH spectra
 imLineRF = double(squeeze(RF(:,line))); 
 [pxx,f] = pwelch(imLineRF);
 f_VECT = linspace(0,Fs/2,length(f));
-p_NORM = 0.5*pxx./max(pxx);
+p_NORM = sqrt(pxx)./max(sqrt(pxx));
 
-figure(7); clf; hold on;
+figure(1);
+subplot(2,1,1)
+plot(t,GHlo,'b', 'LineWidth', 1.5);
+title(['GH_{',num2str(ordlo),'}'])
+ylim([min(GHlo,[],'all')*1.25 max(GHlo,[],'all')*1.25]);
+subplot(2,1,2)
+plot(t,GHhi,'r', 'LineWidth', 1.5);
+title(['GH_{',num2str(ordhi),'}'])
+ylim([min(GHhi,[],'all')*1.25 max(GHhi,[],'all')*1.25]);
+sgtitle('Gaussian weighted Hermite polynomials')
+
+figure(2); clf; hold on;
 plot(f_VECT, p_NORM,'-','color',[0 .5 0],'LineWidth', 1.5);
 plot(f_VECTlo, p_NORMlo, 'b', 'LineWidth', 1.5);
 plot(f_VECThi, p_NORMhi, 'r', 'LineWidth', 1.5);
 sgtitle(['PSD for frame ',num2str(frame),' and line ',num2str(line)]);
 xlabel('Frequency f [MHz]'); ylabel('Amplitude A [1]');
-legend({'RF imageline','Low pass (GH2)','High pass (GH8)'});
+legend({'RF imageline','Low pass','High pass'});
 ylim([	min([p_NORMlo p_NORMhi p_NORM],[],'all')*1.25...
 		max([p_NORMlo p_NORMhi p_NORM],[],'all')*1.25]);
 
 % computing analytic energies for conv
-E2 = 1*3*sqrt(pi/2);
-E8 = 1*3*5*7*9*11*13*15*sqrt(pi/2);
+Elo=prod(1:2:(2*ordlo-1))*sqrt(pi/2);
+Ehi=prod(1:2:(2*ordhi-1))*sqrt(pi/2);
 
 %% ----------------------------
 % 1D H-scan conv and rgb encoding
@@ -251,7 +272,7 @@ Hhi = sqrt(abs(hilbert(Hhi)));
 Red_ImLine = Hlo./Hhi; % Stämmer det? Jag tror dessa varianter användes i någon av artiklarna
 Blue_ImLine = Hhi./Hlo; % Stämmer det?
 
-figure(8); clf; hold on;
+figure(3); clf; hold on;
 plot(Red_ImLine,'r');
 plot(Blue_ImLine,'b');
 xlabel('Depth (image line time)');
@@ -261,39 +282,45 @@ legend({'Red channel','Blue channel'});
 %% ---------------------------
 % 2D H-scan conv and rgb encoding
 %-----------------------------
-clear RF2 RF8
-clear Bmodes2 Bmodes8
+clear RFlo RFhi
+clear Bmodeslo Bmodeshi
 
 % convolution
 for k=1:128
-	RF2(:,k)=conv(RF(:,k),GHlo,'same')./sqrt(E2);
-	RF8(:,k)=conv(RF(:,k),GHhi,'same')./sqrt(E8);
+	RFlo(:,k)=conv(RF(:,k),GHlo,'same')./sqrt(Elo);
+	RFhi(:,k)=conv(RF(:,k),GHhi,'same')./sqrt(Ehi);
 end
 
 % envelope detection
-Bmodes2=sqrt(abs(hilbert(RF2)));
-Bmodes8=sqrt(abs(hilbert(RF8)));
+Bmodeslo=sqrt(abs(hilbert(RFlo)));
+Bmodeshi=sqrt(abs(hilbert(RFhi)));
 
 %% plot H-scan filtering results
-draw_pic(Bmodes(:,:), Bmodes2, Bmodes8, [] , 0.05,9);
+draw_pic(Bmodes(:,:), Bmodeslo, Bmodeshi, [] , 0.05,4);
 
 %% rb colorcoding
 BmodesrgbH = zeros(shape(1),shape(2),3);
 Bmodesrgb = zeros(shape(1),shape(2),3);
-Bmodesrgb2 = zeros(shape(1),shape(2),3);
-Bmodesrgb8 = zeros(shape(1),shape(2),3);
+Bmodesrgblo = zeros(shape(1),shape(2),3);
+Bmodesrgbhi = zeros(shape(1),shape(2),3);
 
-BmodesrgbH(:,:,1) = Bmodes8(:,:)./mean2(Bmodes8(:,:));
-BmodesrgbH(:,:,3) = Bmodes2(:,:)./mean2(Bmodes2(:,:));
+BmodesrgbH(:,:,1) = Bmodeshi(:,:)./mean2(Bmodeshi(:,:));
+BmodesrgbH(:,:,3) = Bmodeslo(:,:)./mean2(Bmodeslo(:,:));
 Bmodesrgb(:,:,2) = Bmodes(:,:)./mean2(Bmodes(:,:));
-Bmodesrgb8(:,:,1,:)=BmodesrgbH(:,:,1,:);
-Bmodesrgb2(:,:,3,:)=BmodesrgbH(:,:,3,:);
+
+Bmodesrgbhi(:,:,1,:) = BmodesrgbH(:,:,1,:);
+Bmodesrgblo(:,:,3,:) = BmodesrgbH(:,:,3,:);
+
+BmodesrgbH = resRed(BmodesrgbH);
+Bmodesrgb = resRed(Bmodesrgb);
+Bmodesrgbhi = resRed(Bmodesrgbhi);
+Bmodesrgblo = resRed(Bmodesrgblo);
 
 %% plot 2D colorcoded H-scan filtering results
-draw_pic(Bmodesrgb,Bmodesrgb2,Bmodesrgb8,BmodesrgbH,0.05,10);
+draw_pic(Bmodesrgb,Bmodesrgblo,Bmodesrgbhi,BmodesrgbH,0.05,5);
 
 %% plot comparison between B-mode and H-scan
-draw_pic2(Bmodes,BmodesrgbH,0.05,11);
+draw_pic2(Bmodes,BmodesrgbH,0.05,6);
 
 %% ---------------
 % 1c Comparing muscle at rest and at work H-scan images
@@ -347,64 +374,80 @@ shape = size(Bmodes);
 %-----------------------
 % checking filter settings in 1D by taking a line/col of the img for
 % freq analysis
-frame=45;	% out of 500
-line=64;	% out of 128
-b1 = .1;
-b2 = .07;
-fs= 35; %should be for the ultrasound, not 1000;
-T_duration = 50; % microseconds (the time intervall for the GH pulses)
-t = linspace(-T_duration,T_duration,2*T_duration*fs);
+Fs = 35; % MHz Samplingfreq of the US not the signal
+T_duration = 10; % microseconds (the time intervall for the GH pulses)
+t = linspace(-T_duration,T_duration,2*T_duration*Fs);
 
-GHlo=exp(-(t/b1).^2).*(4*(t./b1).^2-2);
+% GH low pass
+b1 = 0.13;
+ordlo = 8;
+Hlo = hermiteH(ordlo, t./b1);
+GHlo = exp(-(t./(b1)).^2).*Hlo;
 GHlo = GHlo./sum(GHlo(:));
-[pxx2,f2] = pwelch(GHlo, hamming(512));
-f_VECTlo = linspace(0,fs/2,length(pxx2));
-p_NORMlo = 0.5*pxx2./max(pxx2);
+[pxxlo,flo] = pwelch(GHlo, hamming(512));
+f_VECTlo = linspace(0,Fs/2,length(pxxlo));
+p_NORMlo = 0.5*pxxlo./max(pxxlo);
 
-GHhi=exp(-(t/b2).^2).*((2*(t./b2)).^8-3584*(t./b2).^6+13440*((t./b2).^4-(t./b2).^2)+1680);
+% GH high pass
+b2 = 0.135;
+ordhi = 32;
+Hhi = hermiteH(32, t./b2); % order 32
+GHhi = exp(-(t./(b2)).^2).*Hhi;
 GHhi = GHhi./sum(GHhi(:));
-[pxx8,f1] = pwelch(GHhi,hamming(512));
-f_VECThi = linspace(0,fs/2,length(pxx8));
-p_NORMhi = 0.5*pxx8./max(pxx8);
+[pxxhi,fhi] = pwelch(GHhi,hamming(512));
+f_VECThi = linspace(0,Fs/2,length(pxxhi));
+p_NORMhi = 0.5*pxxhi./max(pxxhi);
 
-imLineRF = double(squeeze(RF_MAT(:,line,frame)));
+% Plot one spectrum of one imageline for comparison with the GH spectra
+imLineRF = double(squeeze(RF_MAT(:,line,frame))); 
 [pxx,f] = pwelch(imLineRF);
-f_VECT = linspace(0,fs/2,length(f));
+f_VECT = linspace(0,Fs/2,length(f));
 p_NORM = sqrt(pxx)./max(sqrt(pxx));
 
-figure(7); clf; hold on;
+figure(1);
+subplot(2,1,1)
+plot(t,GHlo,'b', 'LineWidth', 1.5);
+title(['GH_{',num2str(ordlo),'}'])
+ylim([min(GHlo,[],'all')*1.25 max(GHlo,[],'all')*1.25]);
+subplot(2,1,2)
+plot(t,GHhi,'r', 'LineWidth', 1.5);
+title(['GH_{',num2str(ordhi),'}'])
+ylim([min(GHhi,[],'all')*1.25 max(GHhi,[],'all')*1.25]);
+sgtitle('Gaussian weighted Hermite polynomials')
+
+figure(2); clf; hold on;
 plot(f_VECT, p_NORM,'-','color',[0 .5 0],'LineWidth', 1.5);
 plot(f_VECTlo, p_NORMlo, 'b', 'LineWidth', 1.5);
 plot(f_VECThi, p_NORMhi, 'r', 'LineWidth', 1.5);
 sgtitle(['PSD for frame ',num2str(frame),' and line ',num2str(line)]);
 xlabel('Frequency f [MHz]'); ylabel('Amplitude A [1]');
-legend({'RF imageline','Low pass (GH2)','High pass (GH8)'});
+legend({'RF imageline','Low pass','High pass'});
 ylim([	min([p_NORMlo p_NORMhi p_NORM],[],'all')*1.25...
 		max([p_NORMlo p_NORMhi p_NORM],[],'all')*1.25]);
 
-% computing analytic energies for convolutions
-E2 = 1*3*sqrt(pi/2);
-E8 = 1*3*5*7*9*11*13*15*sqrt(pi/2);
+% computing analytic energies for conv
+Elo=prod(1:2:(2*ordlo-1))*sqrt(pi/2);
+Ehi=prod(1:2:(2*ordhi-1))*sqrt(pi/2);
 
-%% ---------------------------
+%% ----------------------------
 % 1D H-scan conv and rgb encoding
 %-----------------------------
 % Compute "B-mode" image line = Green channel
-Green_ImLine = sqrt(abs(hilbert(RF_MAT(:,line,frame))));
+Green_ImLine = sqrt(abs(hilbert(imLineRF)));
 
 % Compute H-scan
 % Convolution. This is the "time-domain filtering" procedure using the GH2 and GH8.
-Hlo = conv(RF_MAT(:,line,frame), GHlo, 'same')./sqrt(E2);
-Hhi = conv(RF_MAT(:,line,frame), GHhi, 'same')./sqrt(E8);
+Hlo = conv(imLineRF, GHlo, 'same'); % Note: 'same' argument is important
+Hhi = conv(imLineRF, GHhi, 'same');
 
-% envelope conversion (I was guessing that this is needed, please double-check)
+% Envelope conversion (I was guessing that this is needed, please double-check)
 Hlo = sqrt(abs(hilbert(Hlo)));
 Hhi = sqrt(abs(hilbert(Hhi)));
 
 Red_ImLine = Hlo./Hhi; % Stämmer det? Jag tror dessa varianter användes i någon av artiklarna
 Blue_ImLine = Hhi./Hlo; % Stämmer det?
 
-figure(8); clf; hold on;
+figure(3); clf; hold on;
 plot(Red_ImLine,'r');
 plot(Blue_ImLine,'b');
 xlabel('Depth (image line time)');
@@ -414,46 +457,58 @@ legend({'Red channel','Blue channel'});
 %% ---------------------------
 % 2D H-scan conv and rgb encoding
 %-----------------------------
-clear RF_MAT2 RF_MAT8
-clear Bmodes2 Bmodes8
-noframes=50;
+clear RF_MATlo RF_MAThi
+clear Bmodeslo Bmodeshi
+noframes=30;
 
 % convolution
 for j=1:noframes
 	for k=1:128
-		RF_MAT2(:,k,j)=conv(RF_MAT(:,k,j),GHlo,'same')./sqrt(E2);
-		RF_MAT8(:,k,j)=conv(RF_MAT(:,k,j),GHhi,'same')./sqrt(E8);
+		RF_MATlo(:,k,j)=conv(RF_MAT(:,k,j),GHlo,'same')./sqrt(Elo);
+		RF_MAThi(:,k,j)=conv(RF_MAT(:,k,j),GHhi,'same')./sqrt(Ehi);
 	end
 end
 
 % envelope detection
-Bmodes2=sqrt(abs(hilbert(RF_MAT2)));
-Bmodes8=sqrt(abs(hilbert(RF_MAT8)));
+Bmodeslo=sqrt(abs(hilbert(RF_MATlo)));
+Bmodeshi=sqrt(abs(hilbert(RF_MAThi)));
 
 %% plot H-scan filtering results
-draw_pic(Bmodes(:,:,1:noframes), Bmodes2, Bmodes8, [] , 0.05,9);
+draw_pic(Bmodes(:,:,1:noframes), Bmodeslo, Bmodeshi, [] , 0.05,9);
 
 %% rb colorcoding
 BmodesrgbH = zeros(shape(1),shape(2),3,noframes);
 Bmodesrgb = zeros(shape(1),shape(2),3,noframes);
-Bmodesrgb2 = zeros(shape(1),shape(2),3,noframes);
-Bmodesrgb8 = zeros(shape(1),shape(2),3,noframes);
+Bmodesrgblo = zeros(shape(1),shape(2),3,noframes);
+Bmodesrgbhi = zeros(shape(1),shape(2),3,noframes);
 
 for j=1:noframes
-	BmodesrgbH(:,:,1,j) = squeeze(Bmodes8(:,:,j))./mean2(squeeze(Bmodes8(:,:,j)));
-	BmodesrgbH(:,:,3,j) = squeeze(Bmodes2(:,:,j))./mean2(squeeze(Bmodes2(:,:,j)));
+	BmodesrgbH(:,:,1,j) = squeeze(Bmodeshi(:,:,j))./mean2(squeeze(Bmodeshi(:,:,j)));
+	BmodesrgbH(:,:,3,j) = squeeze(Bmodeslo(:,:,j))./mean2(squeeze(Bmodeslo(:,:,j)));
  	Bmodesrgb(:,:,2,j) = squeeze(Bmodes(:,:,j))./mean2(squeeze(Bmodes(:,:,j)));
 end
 
-Bmodesrgb8(:,:,1,:)=BmodesrgbH(:,:,1,:);
-Bmodesrgb2(:,:,3,:)=BmodesrgbH(:,:,3,:);
+Bmodesrgbhi(:,:,1,:)=BmodesrgbH(:,:,1,:);
+Bmodesrgblo(:,:,3,:)=BmodesrgbH(:,:,3,:);
+
+for j=1:noframes
+    BmodesrgbH(:,:,:,j) = resRed(BmodesrgbH(:,:,:,j));
+    Bmodesrgb(:,:,:,j) = resRed(Bmodesrgb(:,:,:,j));
+    Bmodesrgbhi(:,:,:,j) = resRed(Bmodesrgbhi(:,:,:,j));
+    Bmodesrgblo(:,:,:,j) = resRed(Bmodesrgblo(:,:,:,j));
+end
 
 %% plot 2D colorcoded H-scan filtering results
-draw_pic(Bmodesrgb,Bmodesrgb2,Bmodesrgb8,BmodesrgbH,0.05,10);
+draw_pic(Bmodesrgb,Bmodesrgblo,Bmodesrgbhi,BmodesrgbH,0.05,10);
 
-%% plot comparison between B-mode and H-scan
-draw_pic2(Bmodes(:,:,1:noframes),BmodesrgbH,0.05,11);
+%%
+% plot comparison between B-mode and H-scan
+draw_pic2(Bmodes(:,:,1:noframes),BmodesrgbH,0.1,11);
 
+%%
+% plot a frame between 1 and noframes
+frame1=18;
+draw_pic2(Bmodes(:,:,frame1),BmodesrgbH(:,:,:,frame1),0.1,11);
 %% load TVI (Validation) data
 % ----------------------
 % Pre-processing data
@@ -500,7 +555,36 @@ C = conv2(A, B8);
 y_filt = filtfilt(b1,b2,y);
 
 %%
-function [filteredI,mask]=maskFilter(I,thresh)
+function filteredI = resRed(I)
+% Reduces resolution on RGB channels to improve visibility of changes in
+% H-scan imaging by taking the median of every 3x3 area and overwriting all
+% pixels within it to its value.
+% Input: RGB image I 
+% Output: Down resoulutioned version of the RGB image.
+if size(I,4)==1
+    for j=2:3:(size(I,1)-1)
+        for k=2:3:(size(I,2)-1)
+            Imed=median([I(j-1,k-1:k+1,:,:) ...
+                I(j,k-1:k+1,:,:) I(j+1,k-1:k+1,:,:)]);
+                ImedMat=repmat(Imed,[3,3,1,1]);
+                I(j-1:j+1,k-1:k+1,:,:)=ImedMat;
+        end
+    end
+    filteredI=I;
+else
+    for j=2:3:(size(I,1)-1)
+        for k=2:3:(size(I,2)-1)
+            Imed=median([I(j-1,k-1:k+1,:) ...
+                I(j,k-1:k+1,:) I(j+1,k-1:k+1,:)]);
+                ImedMat=repmat(Imed,[3,3,1]);
+                I(j-1:j+1,k-1:k+1,:)=ImedMat;
+        end
+    end
+    filteredI=I;
+end
+end
+
+function [filteredI,mask] = maskFilter(I,thresh)
 	% Get a mask using locally adaptive thresholding.
 	mask = imbinarize(I, thresh);
 	% Dilate it a bit to make the spots bigger.
@@ -547,11 +631,11 @@ function draw_pic(mat1, mat2, mat3, mat4, delay, fignum)
 	
     	subplot(2,2,2);
 		img2 = imagesc(W2, [lowi, highi]);
-		title('GH_2 filtered Bmodes color channel')
+		title('Low pass filtered Bmodes color channel')
 
 		subplot(2,2,3);
 		img3 = imagesc(W3, [lowi, highi]);
-		title('GH_8 filtered Bmodes color channel')
+		title('High pass filtered Bmodes color channel')
 
 		subplot(2,2,4);
 		img4 = imagesc(W4, [lowi, highi]);
@@ -581,7 +665,7 @@ function draw_pic(mat1, mat2, mat3, mat4, delay, fignum)
 		
         %drawnow limitrate;
         drawnow();
-        caxis([0,1])
+        clim([0,1])
         pause(delay);
         disp(K);
 		end
@@ -600,7 +684,7 @@ function draw_pic(mat1, mat2, mat3, mat4, delay, fignum)
 
 		% Maximize window.
 		g = gcf;
-% 		g.WindowState = 'maximized';
+    	g.WindowState = 'maximized';
 		drawnow;
 	
     	subplot(1,3,1);
@@ -609,11 +693,11 @@ function draw_pic(mat1, mat2, mat3, mat4, delay, fignum)
 	
     	subplot(1,3,2);
 		img2 = imagesc(W2, [lowi, highi]);
-		title('GH_2 filtered Bmode')
+		title('Low pass filtered Bmode')
 
 		subplot(1,3,3);
 		img3 = imagesc(W3, [lowi, highi]);
-		title('GH_8 filtered Bmode')
+		title('High pass filtered Bmode')
 
 		sgtitle('H-scan images compared to the original B-modes');
 
@@ -637,7 +721,7 @@ function draw_pic(mat1, mat2, mat3, mat4, delay, fignum)
 
         %drawnow limitrate;
         drawnow();
-        caxis([0,1])
+        clim([0,1])
         pause(delay);
         disp(K);
 		end
@@ -672,12 +756,20 @@ function draw_pic2(mat1, mat2, delay, fignum)
 	
     	subplot(1,2,1);
     	img1 = imagesc(W1, [lowi, highi]);colormap gray;
-		title('At rest')
-	
+        if size(mat1,3)==3
+		    title('At rest')
+        else
+            title('B-mode')
+        end
     	subplot(1,2,2);
 		img2 = imagesc(W2, [lowi, highi]);
-		title('Contracted')
-
+		if size(mat1,3)==3
+        	title('Contracted')
+            sgtitle(['Comparison of activity between fully contracted and ' ...
+                'at rest'])
+        else
+            title('H-scan')
+        end
 		pause(2);
 
 		for K = 2:Q
@@ -697,7 +789,7 @@ function draw_pic2(mat1, mat2, delay, fignum)
 		
         %drawnow limitrate;
         drawnow();
-        caxis([0,1])
+        clim([0,.95])
         pause(delay);
         disp(K);
 		end
