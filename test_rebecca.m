@@ -7,10 +7,10 @@
 % --------
 % AT REST
 % --------
-frame = 10; % Chose a frame, for dataset 1 one is sufficient for the report.
-line = 64; % Image line = 64 out or 128
 load('C:\Users\Rebecca Viklund\Desktop\AMI project\AMI\Dataset_1\CG_rest_2_omg2.mat');
 
+frame=floor(30/2); % Chose a frame, for dataset 1 one is sufficient for the report.
+line=floor(size(RF,2)/2); % Image line = 64 out or 128
 % ----------------------
 % Pre-processing of data
 % ----------------------
@@ -110,8 +110,8 @@ Hhi = conv(imLineRF, GHhi, 'same');
 Hlo = sqrt(abs(hilbert(Hlo)));
 Hhi = sqrt(abs(hilbert(Hhi)));
 
-Red_ImLine = Hlo./Hhi; % Stämmer det? Jag tror dessa varianter användes i någon av artiklarna
-Blue_ImLine = Hhi./Hlo; % Stämmer det?
+Red_ImLine = Hhi./Hlo; % Stämmer det? Jag tror dessa varianter användes i någon av artiklarna
+Blue_ImLine = Hlo./Hhi; % Stämmer det?
 
 figure(3); clf; hold on;
 plot(Red_ImLine,'r');
@@ -145,17 +145,18 @@ Bmodesrgb = zeros(shape(1),shape(2),3);
 Bmodesrgblo = zeros(shape(1),shape(2),3);
 Bmodesrgbhi = zeros(shape(1),shape(2),3);
 
-BmodesrgbHr(:,:,1) = Bmodeshi(:,:)./mean2(Bmodeshi(:,:));
-BmodesrgbHr(:,:,3) = Bmodeslo(:,:)./mean2(Bmodeslo(:,:));
-Bmodesrgb(:,:,2) = Bmodes(:,:)./mean2(Bmodes(:,:));
+BmodesrgbHr(:,:,1) = (Bmodeshi(:,:)-min(Bmodeshi(:,:),[],'all')) / (max(Bmodeshi(:,:),[],'all')-min(Bmodeshi(:,:),[],'all')); %Bmodeshi(:,:)./mean2(Bmodeshi(:,:));
+BmodesrgbHr(:,:,3) = (Bmodeslo(:,:)-min(Bmodeslo(:,:),[],'all')) / (max(Bmodeslo(:,:),[],'all')-min(Bmodeslo(:,:),[],'all'));
+Bmodesrgb(:,:,2) = (Bmodes(:,:)-min(Bmodes(:,:),[],'all')) / (max(Bmodes(:,:),[],'all')-min(Bmodes(:,:),[],'all'));
 
-Bmodesrgbhi(:,:,1,:) = BmodesrgbHr(:,:,1,:);
-Bmodesrgblo(:,:,3,:) = BmodesrgbHr(:,:,3,:);
+Bmodesrgbhi(:,:,1) = BmodesrgbHr(:,:,1);
+Bmodesrgblo(:,:,3) = BmodesrgbHr(:,:,3);
 
-BmodesrgbHr = resRed(BmodesrgbHr);
-Bmodesrgb = resRed(Bmodesrgb);
-Bmodesrgbhi = resRed(Bmodesrgbhi);
-Bmodesrgblo = resRed(Bmodesrgblo);
+BmodesrgbHr(:,:,1) = medfilt2(BmodesrgbHr(:,:,1));
+BmodesrgbHr(:,:,3) = medfilt2(BmodesrgbHr(:,:,3));
+Bmodesrgb = medfilt2(Bmodesrgb(:,:,2));
+Bmodesrgbhi = medfilt2(Bmodesrgbhi(:,:,1));
+Bmodesrgblo = medfilt2(Bmodesrgblo(:,:,3));
 
 %% plot 2D colorcoded H-scan filtering results
 draw_pic(Bmodesrgb,Bmodesrgblo,Bmodesrgbhi,BmodesrgbHr,0.05,5);
@@ -166,9 +167,9 @@ draw_pic2(Bmodes,BmodesrgbHr,0.05,6);
 %% --------
 % AT WORK
 % --------
-frame = 10; % Chose a frame, for dataset 1 one is sufficient for the report.
-line=64; % Image line = 64 out or 128
 load('C:\Users\Rebecca Viklund\Desktop\AMI project\AMI\Dataset_1\CG_contraction_1_omg2.mat');
+frame=floor(30/2); % Chose a frame, for dataset 1 one is sufficient for the report.
+line=floor(size(RF,2)/2); % Image line = 64 out or 128
 
 % ----------------------
 % Pre-processing of data
@@ -269,8 +270,8 @@ Hhi = conv(imLineRF, GHhi, 'same');
 Hlo = sqrt(abs(hilbert(Hlo)));
 Hhi = sqrt(abs(hilbert(Hhi)));
 
-Red_ImLine = Hlo./Hhi; % Stämmer det? Jag tror dessa varianter användes i någon av artiklarna
-Blue_ImLine = Hhi./Hlo; % Stämmer det?
+Red_ImLine = Hhi./Hlo; % Stämmer det? Jag tror dessa varianter användes i någon av artiklarna
+Blue_ImLine = Hlo./Hhi; % Stämmer det?
 
 figure(3); clf; hold on;
 plot(Red_ImLine,'r');
@@ -304,17 +305,18 @@ Bmodesrgb = zeros(shape(1),shape(2),3);
 Bmodesrgblo = zeros(shape(1),shape(2),3);
 Bmodesrgbhi = zeros(shape(1),shape(2),3);
 
-BmodesrgbH(:,:,1) = Bmodeshi(:,:)./mean2(Bmodeshi(:,:));
-BmodesrgbH(:,:,3) = Bmodeslo(:,:)./mean2(Bmodeslo(:,:));
-Bmodesrgb(:,:,2) = Bmodes(:,:)./mean2(Bmodes(:,:));
+BmodesrgbH(:,:,1) = (Bmodeshi(:,:)-min(Bmodeshi(:,:),[],'all')) / (max(Bmodeshi(:,:),[],'all')-min(Bmodeshi(:,:),[],'all')); %Bmodeshi(:,:)./mean2(Bmodeshi(:,:));
+BmodesrgbH(:,:,3) = (Bmodeslo(:,:)-min(Bmodeslo(:,:),[],'all')) / (max(Bmodeslo(:,:),[],'all')-min(Bmodeslo(:,:),[],'all'));
+Bmodesrgb(:,:,2) = (Bmodes(:,:)-min(Bmodes(:,:),[],'all')) / (max(Bmodes(:,:),[],'all')-min(Bmodes(:,:),[],'all'));
 
 Bmodesrgbhi(:,:,1,:) = BmodesrgbH(:,:,1,:);
 Bmodesrgblo(:,:,3,:) = BmodesrgbH(:,:,3,:);
 
-BmodesrgbH = resRed(BmodesrgbH);
-Bmodesrgb = resRed(Bmodesrgb);
-Bmodesrgbhi = resRed(Bmodesrgbhi);
-Bmodesrgblo = resRed(Bmodesrgblo);
+BmodesrgbH(:,:,1) = medfilt2(BmodesrgbH(:,:,1));
+BmodesrgbH(:,:,3) = medfilt2(BmodesrgbH(:,:,3));
+Bmodesrgb = medfilt2(Bmodesrgb(:,:,2));
+Bmodesrgbhi = medfilt2(Bmodesrgbhi(:,:,1));
+Bmodesrgblo = medfilt2(Bmodesrgblo(:,:,3));
 
 %% plot 2D colorcoded H-scan filtering results
 draw_pic(Bmodesrgb,Bmodesrgblo,Bmodesrgbhi,BmodesrgbH,0.05,5);
@@ -325,6 +327,19 @@ draw_pic2(Bmodes,BmodesrgbH,0.05,6);
 %% ---------------
 % 1c Comparing muscle at rest and at work H-scan images
 %-----------------
+figure
+subplot(1,2,1)
+histogram(BmodesrgbHr,20)
+title('At rest')
+ylabel('Culmutative sum of occurence');
+xlabel('Normalized intensities I [1]')
+subplot(1,2,2)
+histogram(BmodesrgbH,20)
+title('Contraction')
+ylabel('Culmutative sum of occurence');
+xlabel('Normalized intensities I [1]')
+sgtitle('H-scan intensity content')
+
 draw_pic2(BmodesrgbHr,BmodesrgbH,0.05,11);
 
 %% load dataset 2 stimulated contraction w ~1.6Hz 1 muscle complex
@@ -361,6 +376,11 @@ Bmodes_new = reshape(Bmodes_fnew, shape(1), shape(2), shape(3));
 %-----------------------
 load("RF_MAT.mat");
 RF_MAT= single(squeeze(RF_MAT(:,:,:)));
+TGC_VECT = linspace(1,10,size(RF_MAT,1))';
+TCG_MAT = repmat(TGC_VECT,[1 size(RF_MAT,2)]);
+
+RF_MAT=RF_MAT.*TCG_MAT;
+
 Bmodes = single(sqrt(abs(hilbert(squeeze(RF_MAT(:,:,:))))));
 shape = size(Bmodes);
 
@@ -399,6 +419,9 @@ f_VECThi = linspace(0,Fs/2,length(pxxhi));
 p_NORMhi = 0.5*pxxhi./max(pxxhi);
 
 % Plot one spectrum of one imageline for comparison with the GH spectra
+frame=10;
+line=64;
+
 imLineRF = double(squeeze(RF_MAT(:,line,frame))); 
 [pxx,f] = pwelch(imLineRF);
 f_VECT = linspace(0,Fs/2,length(f));
@@ -444,8 +467,8 @@ Hhi = conv(imLineRF, GHhi, 'same');
 Hlo = sqrt(abs(hilbert(Hlo)));
 Hhi = sqrt(abs(hilbert(Hhi)));
 
-Red_ImLine = Hlo./Hhi; % Stämmer det? Jag tror dessa varianter användes i någon av artiklarna
-Blue_ImLine = Hhi./Hlo; % Stämmer det?
+Red_ImLine = Hhi./Hlo; % Stämmer det? Jag tror dessa varianter användes i någon av artiklarna
+Blue_ImLine = Hlo./Hhi; % Stämmer det?
 
 figure(3); clf; hold on;
 plot(Red_ImLine,'r');
@@ -459,10 +482,10 @@ legend({'Red channel','Blue channel'});
 %-----------------------------
 clear RF_MATlo RF_MAThi
 clear Bmodeslo Bmodeshi
-noframes=30;
+noframes=500;
 
 % convolution
-for j=1:noframes
+for j=1:4:noframes
 	for k=1:128
 		RF_MATlo(:,k,j)=conv(RF_MAT(:,k,j),GHlo,'same')./sqrt(Elo);
 		RF_MAThi(:,k,j)=conv(RF_MAT(:,k,j),GHhi,'same')./sqrt(Ehi);
@@ -482,33 +505,40 @@ Bmodesrgb = zeros(shape(1),shape(2),3,noframes);
 Bmodesrgblo = zeros(shape(1),shape(2),3,noframes);
 Bmodesrgbhi = zeros(shape(1),shape(2),3,noframes);
 
-for j=1:noframes
-	BmodesrgbH(:,:,1,j) = squeeze(Bmodeshi(:,:,j))./mean2(squeeze(Bmodeshi(:,:,j)));
-	BmodesrgbH(:,:,3,j) = squeeze(Bmodeslo(:,:,j))./mean2(squeeze(Bmodeslo(:,:,j)));
- 	Bmodesrgb(:,:,2,j) = squeeze(Bmodes(:,:,j))./mean2(squeeze(Bmodes(:,:,j)));
+for j=1:floor(noframes/4)
+	BmodesrgbH(:,:,1,j) = (Bmodeshi(:,:,j)-min(Bmodeshi(:,:,j),[],'all')) / (max(Bmodeshi(:,:,j),[],'all')-min(Bmodeshi(:,:,j),[],'all')); %Bmodeshi(:,:)./mean2(Bmodeshi(:,:));
+	BmodesrgbH(:,:,3,j) = (Bmodeslo(:,:,j)-min(Bmodeslo(:,:,j),[],'all')) / (max(Bmodeslo(:,:,j),[],'all')-min(Bmodeslo(:,:,j),[],'all'));
+ 	Bmodesrgb(:,:,2,j) = (Bmodes(:,:,j)-min(Bmodes(:,:,j),[],'all')) / (max(Bmodes(:,:,j),[],'all')-min(Bmodes(:,:,j),[],'all'));
 end
 
 Bmodesrgbhi(:,:,1,:)=BmodesrgbH(:,:,1,:);
 Bmodesrgblo(:,:,3,:)=BmodesrgbH(:,:,3,:);
 
-for j=1:noframes
-    BmodesrgbH(:,:,:,j) = resRed(BmodesrgbH(:,:,:,j));
-    Bmodesrgb(:,:,:,j) = resRed(Bmodesrgb(:,:,:,j));
-    Bmodesrgbhi(:,:,:,j) = resRed(Bmodesrgbhi(:,:,:,j));
-    Bmodesrgblo(:,:,:,j) = resRed(Bmodesrgblo(:,:,:,j));
+for j=1:floor(noframes/4)
+    BmodesrgbH(:,:,1,j) = medfilt2(BmodesrgbH(:,:,1,j));
+    BmodesrgbH(:,:,3,j) = medfilt2(BmodesrgbH(:,:,3,j));
+    Bmodesrgb(:,:,2,j) = medfilt2(Bmodesrgb(:,:,2,j));
+    Bmodesrgbhi(:,:,1,j) = medfilt2(Bmodesrgbhi(:,:,1,j));
+    Bmodesrgblo(:,:,3,j) = medfilt2(Bmodesrgblo(:,:,3,j));
+end
+
+[b,a] = butter(4,[5 25]/1000,'bandpass');
+
+for j=1:floor(noframes/4)
+    BmodesrgbH(:,:,1,j) = filtfilt(b,a,BmodesrgbH(:,:,1,j));
+    BmodesrgbH(:,:,3,j) = filtfilt(b,a,BmodesrgbH(:,:,3,j));
 end
 
 %% plot 2D colorcoded H-scan filtering results
 draw_pic(Bmodesrgb,Bmodesrgblo,Bmodesrgbhi,BmodesrgbH,0.05,10);
 
-%%
-% plot comparison between B-mode and H-scan
-draw_pic2(Bmodes(:,:,1:noframes),BmodesrgbH,0.1,11);
+%% plot comparison between B-mode and H-scan
+draw_pic2(Bmodes(:,:,1:floor(noframes/4)),BmodesrgbH,0.1,11);
 
-%%
-% plot a frame between 1 and noframes
-frame1=18;
+%% plot a frame between 1 and noframes
+frame1=132;
 draw_pic2(Bmodes(:,:,frame1),BmodesrgbH(:,:,:,frame1),0.1,11);
+
 %% load TVI (Validation) data
 % ----------------------
 % Pre-processing data
@@ -555,46 +585,6 @@ C = conv2(A, B8);
 y_filt = filtfilt(b1,b2,y);
 
 %%
-function filteredI = resRed(I)
-% Reduces resolution on RGB channels to improve visibility of changes in
-% H-scan imaging by taking the median of every 3x3 area and overwriting all
-% pixels within it to its value.
-% Input: RGB image I 
-% Output: Down resoulutioned version of the RGB image.
-if size(I,4)==1
-    for j=2:3:(size(I,1)-1)
-        for k=2:3:(size(I,2)-1)
-            Imed=median([I(j-1,k-1:k+1,:,:) ...
-                I(j,k-1:k+1,:,:) I(j+1,k-1:k+1,:,:)]);
-                ImedMat=repmat(Imed,[3,3,1,1]);
-                I(j-1:j+1,k-1:k+1,:,:)=ImedMat;
-        end
-    end
-    filteredI=I;
-else
-    for j=2:3:(size(I,1)-1)
-        for k=2:3:(size(I,2)-1)
-            Imed=median([I(j-1,k-1:k+1,:) ...
-                I(j,k-1:k+1,:) I(j+1,k-1:k+1,:)]);
-                ImedMat=repmat(Imed,[3,3,1]);
-                I(j-1:j+1,k-1:k+1,:)=ImedMat;
-        end
-    end
-    filteredI=I;
-end
-end
-
-function [filteredI,mask] = maskFilter(I,thresh)
-	% Get a mask using locally adaptive thresholding.
-	mask = imbinarize(I, thresh);
-	% Dilate it a bit to make the spots bigger.
-	mask = imdilate(mask,strel("disk",r,n));
-	% Repair the image by using regionfill() 
-	% to smear in the surrounding pixels values into the white spots.
-	repairedImage = regionfill(I, mask);
-	filteredI=repairedImage;
-end
-
 function draw_pic(mat1, mat2, mat3, mat4, delay, fignum)
 % plots 3-4 Bmode images with specified delay and option of including
 % figure number
@@ -789,7 +779,7 @@ function draw_pic2(mat1, mat2, delay, fignum)
 		
         %drawnow limitrate;
         drawnow();
-        clim([0,.95])
+        clim([6.5e-3,0.65])
         pause(delay);
         disp(K);
 		end
