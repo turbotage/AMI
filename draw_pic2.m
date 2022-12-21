@@ -9,11 +9,12 @@ function draw_pic2(mat1, mat2, delay, fignum)
 	else 
 		figure
 	end
-		Q = size(mat1,3);
 		
 	if size(mat1,3)==3
+        Q = size(mat1,4);
 		W1 = mat1(:,:,:,1);
-	else
+    else
+        Q = size(mat1,3);
 		W1 = mat1(:,:,1);
 		W1 = mat2gray(W1);
 	end
@@ -25,12 +26,14 @@ function draw_pic2(mat1, mat2, delay, fignum)
 		drawnow;
 	
     	subplot(1,2,1);
-    	img1 = imagesc(W1, [lowi, highi]);colormap gray;
         if size(mat1,3)==3
+            img1 = imagesc(W1, [lowi, highi]);
 		    title('At rest')
         else
+            img1 = imagesc(W1, [lowi, highi]);colormap gray;
             title('B-mode')
         end
+
     	subplot(1,2,2);
 		img2 = imagesc(W2, [lowi, highi]);
 		if size(mat1,3)==3
@@ -40,6 +43,7 @@ function draw_pic2(mat1, mat2, delay, fignum)
         else
             title('H-scan')
         end
+        
 		pause(2);
 
 		for K = 2:Q

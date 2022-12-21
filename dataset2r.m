@@ -1,70 +1,67 @@
-%  AMI Project 2022
-
-%% load dataset 1 only image contraction at full activation vs full rest
-% should be conducted on one frame with only the H-scan for both full
-% activation and at rest.
-
-% See separate script dataset1r.m
-
-%% load dataset 2 stimulated contraction w ~1.6Hz 1 muscle complex
+% AMI Project 2022 - Rebecca
+% Dataset 2 - H-scan
+%--------------------------------------------------------------------------
+% load dataset 2 stimulated contraction w ~1.6Hz i.e. 2-3 Hz on 1 muscle complex
 % should be conducted on several frames and is to be filtered using
-% svd only.
+% svd and H-scan?
 % ----------------------
 % Pre-processing data
 %-----------------------
-% rfmat_dsf = single(load('181023_1311_rs.mat').rfmat_downsampled);
-% 
-% Bmodes = sqrt(abs(hilbert(squeeze(rfmat_dsf(:,:,:)))));
-% shape = size(Bmodes);
-% Bmodes_f = reshape(Bmodes, shape(1)*shape(2), shape(3));
+% 1311 - 8Hz stim
+rfmat = single(load('181023_1311_rs.mat').rfmat_downsampled);
+rfmat = rfmat(1:1000,:,:);
+TGC_VECT = linspace(1,10,size(rfmat,1))';
+TCG_MAT = repmat(TGC_VECT,[1 size(rfmat,2)]);
+rfmat=rfmat.*TCG_MAT;
 
-% ---------------------
-% SVD 2 - Viktors part
-%-----------------------
-% [U,S,V] = svd(Bmodes_f, 'econ');
-% 
-% Snew = S;
-% Snew(25:end, 25:end) = 0;
-% Snew(1:20,1:20) = 0;
-% 
-% Bmodes_fnew = U * Snew * V';
-% Bmodes_new = reshape(Bmodes_fnew, shape(1), shape(2), shape(3));
+roimat = load('181023_1311_ROI.mat');
+roimat = roimat.ROI;
 
-% MY COMPUTER CAN'T HANDLE THIS DATASET!
-
-%% load dataset 3 voluntary contraction w ~5-25Hz 2-4 muscle complexes
-% should be conducted on several frames and is to be filtered using both
-% svd and H-scan
-% ----------------------
-% Pre-processing data
-%-----------------------
-load("RF_MAT.mat");
-RF_MAT= single(squeeze(RF_MAT(:,:,:)));
-TGC_VECT = linspace(1,10,size(RF_MAT,1))';
-TCG_MAT = repmat(TGC_VECT,[1 size(RF_MAT,2)]);
-
-RF_MAT=RF_MAT.*TCG_MAT;
-
-Bmodes = single(sqrt(abs(hilbert(squeeze(RF_MAT(:,:,:))))));
+Bmodes = sqrt(abs(hilbert(squeeze(rfmat(:,:,:)))));
 shape = size(Bmodes);
 
-% ---------------------
-% SVD 3 - Viktors part
+%% ---------------------
+% SVD vs TVI - Viktors part
 %-----------------------
+% --------------------
+% Pre-processing TVI data 
+%---------------------
+% fn_STR = '181023_1311tvi_rs.mat';
+% h = matfile(fn_STR);
+% tvif_d = single(h.tvi_downsampled(:,:,1:250));
+% tvif_d = sqrt(abs(hilbert(squeeze(tvif_d(:,:,:)))));
+%-------------------------
+% Filtering and comparing
+%-------------------------
+% Prefiltering
+% median3 and butter order 4 on both TVI and SVD, keeping the freqs in
+% range 5-25 Hz
 
+% tripple median filtering
+% Bmodes_fin=medfilt3(Bmodes_new);
+% tvi_fin=medfilt3(tvif);
+
+% spatial filtering
+% C = conv2(A, B8);
+
+% freq filtering
+% idea: bandpass on every pixel intensity over activation time 5-15(30) Hz
+% for dataset 2 but around 1.5 Hz for dataset 3
+% [b,a] = butter(4,[5 25]./(Fsamp/2),'bandpass');
+% y_filt = filtfilt(b,a,y);
 
 % ---------------------
 % H-scan 3
 %-----------------------
 % checking filter settings in 1D by taking a line/col of the img for
 % freq analysis
-Fs = 35; % MHz Samplingfreq of the US not the signal
+Fs = 40; % MHz Samplingfreq of the US not the signal
 T_duration = 10; % microseconds (the time intervall for the GH pulses)
 t = linspace(-T_duration,T_duration,2*T_duration*Fs);
 
 % GH low pass
-b1 = 0.13;
-ordlo = 8;
+b1 = 0.340;
+ordlo = 2;
 Hlo = hermiteH(ordlo, t./b1);
 GHlo = exp(-(t./(b1)).^2).*Hlo;
 GHlo = GHlo./sum(GHlo(:));
@@ -87,19 +84,19 @@ title(['GH_{',num2str(ordhi),'}'])
 ylim([min(GHhi,[],'all')*1.25 max(GHhi,[],'all')*1.25]);
 sgtitle('Gaussian weighted Hermite polynomials')
 
-% Plot one spectrum of one imageline for comparison with the GH spectra
-frame=floor(size(RF_MAT,3)/2); % 
-line=floor(size(RF_MAT,2)/2); %
+%% Plot one spectrum of one imageline for comparison with the GH spectra
+frame=floor(size(rfmat,3)/2); % 
+line=floor(size(rfmat,2)/2); %
 
 [pxxlo,flo] = pwelch(GHlo, hamming(512));
-f_VECTlo = linspace(0,Fs/2,length(pxxlo));
+f_VECTlo = linspace(0,Fs/2,length(flo));
 p_NORMlo = 0.5*pxxlo./max(pxxlo);
 
 [pxxhi,fhi] = pwelch(GHhi,hamming(512));
-f_VECThi = linspace(0,Fs/2,length(pxxhi));
+f_VECThi = linspace(0,Fs/2,length(fhi));
 p_NORMhi = 0.5*pxxhi./max(pxxhi);
 
-imLineRF = double(squeeze(RF_MAT(:,line,frame))); 
+imLineRF = double(squeeze(rfmat(:,line,frame))); 
 [pxx,f] = pwelch(imLineRF);
 f_VECT = linspace(0,Fs/2,length(f));
 p_NORM = sqrt(pxx)./max(sqrt(pxx));
@@ -111,8 +108,8 @@ plot(f_VECThi, p_NORMhi, 'r', 'LineWidth', 1.5);
 sgtitle(['PSD for frame ',num2str(frame),' and line ',num2str(line)]);
 xlabel('Frequency f [MHz]'); ylabel('Amplitude A [1]');
 legend({'RF imageline','Low pass','High pass'});
-ylim([	min([p_NORMlo p_NORMhi p_NORM],[],'all')*1.25...
-		max([p_NORMlo p_NORMhi p_NORM],[],'all')*1.25]);
+ylim([	min([p_NORMlo p_NORMhi [p_NORM;ones(length(p_NORMlo)-length(p_NORM),1)]],[],'all')*1.15...
+		max([p_NORMlo p_NORMhi [p_NORM;zeros(length(p_NORMlo)-length(p_NORM),1)]],[],'all')*1.15]);
 
 % computing analytic energies for conv
 Elo=prod(1:2:(2*ordlo-1))*sqrt(pi/2);
@@ -123,14 +120,14 @@ Ehi=prod(1:2:(2*ordhi-1))*sqrt(pi/2);
 %-----------------------------
 clear RF_MATlo RF_MAThi
 clear Bmodeslo Bmodeshi
-noframes=500;
+noframes=size(rfmat,3);
 frames=1:floor(noframes);
 
 % convolution
 for j=1:noframes
 	for k=1:128
-		RF_MATlo(:,k,j)=conv(RF_MAT(:,k,j),GHlo,'same')./sqrt(Elo);
-		RF_MAThi(:,k,j)=conv(RF_MAT(:,k,j),GHhi,'same')./sqrt(Ehi);
+		RF_MATlo(:,k,j)=conv(rfmat(:,k,j),GHlo,'same')./sqrt(Elo);
+		RF_MAThi(:,k,j)=conv(rfmat(:,k,j),GHhi,'same')./sqrt(Ehi);
 	end
 end
 
@@ -150,8 +147,7 @@ for j=1:floor(noframes)
  	Bmodesrgb(:,:,2,j) = (Bmodes(:,:,j)-min(Bmodes(:,:,j),[],'all')) / (max(Bmodes(:,:,j),[],'all')-min(Bmodes(:,:,j),[],'all'));
 end
 
-Bmodesrgbhi(:,:,1,:)=BmodesrgbH(:,:,1,:);
-Bmodesrgblo(:,:,3,:)=BmodesrgbH(:,:,3,:);
+[Bmodesrgbhi(:,:,1,:),~,Bmodesrgblo(:,:,3,:)]=imsplit(BmodesrgbH);
 
 for j=1:floor(noframes)
     BmodesrgbH(:,:,1,j) = medfilt2(BmodesrgbH(:,:,1,j));
@@ -169,6 +165,45 @@ draw_pic(Bmodesrgb,Bmodesrgblo,Bmodesrgbhi,BmodesrgbH,0.05,10);
 
 %% plot comparison between B-mode and H-scan
 draw_pic2(Bmodes(:,:,1:floor(noframes/4)),BmodesrgbH,0.1,11);
+
+%% Mask the image
+for j=1:noframes
+    %Hmasked(:,:,:,j) = bsxfun(@times, BmodesrgbH(:,:,:,j), cast(roimat, 'like', BmodesrgbH(:,:,:,j)));
+    Hmasked(:,:,:,j) = BmodesrgbH(:,:,:,j).*repmat(roimat,[1,1,3]);
+end
+%% plot mask vs H-scan
+opacity=.1;
+figure
+W1=BmodesrgbH(:,:,:,1);
+W2=roimat;
+W3=Hmasked(:,:,:,1);
+
+subplot(1,2,1)
+img1=image(W1,'CDataMapping','scaled');
+hold on;
+img2=image(W2,'CDataMapping','scaled','AlphaData',opacity*ones(size(roimat)));colormap gray;
+title(['H-scan with ROI overlapped at opacity ',num2str(opacity)])
+subplot(1,2,2)
+img3=image(W3,'CDataMapping','scaled');
+title('masked out image area');
+pause(2)
+for j=1:floor(noframes/4)
+    W1 = BmodesrgbH(:,:,:,j);
+    W1 = imadjust(W1, [0,1],[]);
+
+    W3 = Hmasked(:,:,:,j);
+    W3 = imadjust(W3, [0,1],[]);
+    
+    set(img1, 'CData', W1);
+    set(img2, 'CData', W2);
+    set(img3, 'CData', W3);
+
+    %drawnow limitrate;
+    drawnow();
+    clim([0,1])
+    pause(.05);
+    disp(j);
+end
 
 %% analyze intensity in a pixel; over measurement time (frames)
 depth=floor(size(BmodesrgbH,1)/2);
@@ -294,48 +329,20 @@ lineFramesHblu(isnan(lineFramesHblu))=0;
 
 [X,Y] = meshgrid(frames,depths);
 figure
+g = gcf;
+g.WindowState = 'maximized';
 subplot(1,2,1)
-surf(X,Y,lineFramesHred);
+surf(X,Y,lineFramesHred,'lineStyle','none');
 title('red channel')
 xlabel('Frame t [ms]');
 ylabel('Depth (image line time)');
 zlabel('Mean intensity at various depths I [%]');
+
 subplot(1,2,2)
-surf(X,Y,lineFramesHblu);
+surf(X,Y,lineFramesHblu,'lineStyle','none');
+colorbar;
 title('blue channel')
 xlabel('Frame t [ms]');
 ylabel('Depth (image line time)');
 zlabel('Mean intensity at various depths I [%]');
 sgtitle('Comparison of channel mean intensities for all frames over depth');
-
-%% load TVI (Validation) data
-% ---------------------
-% SVD 2 and 3 VS TVI - Viktors part
-%-----------------------
-% --------------------
-% Pre-processing data 
-%---------------------
-% fn_STR = '181023_1311tvi_rs.mat';
-% h = matfile(fn_STR);
-% tvif_d = single(h.tvi_downsampled(:,:,1:250));
-% tvif_d = sqrt(abs(hilbert(squeeze(tvif_d(:,:,:)))));
-
-%-------------------------
-% Filtering and comparing
-%-------------------------
-% Prefiltering
-% median3 and butter order 4 on both TVI and SVD, keeping the freqs in
-% range 5-25 Hz
-
-% tripple median filtering
-% Bmodes_fin=medfilt3(Bmodes_new);
-% tvi_fin=medfilt3(tvif);
-
-% spatial filtering
-% C = conv2(A, B8);
-
-% freq filtering
-% idea: bandpass on every pixel intensity over activation time 5-15(30) Hz
-% for dataset 2 but around 1.5 Hz for dataset 3
-% [b,a] = butter(4,[5 25]./(Fsamp/2),'bandpass');
-% y_filt = filtfilt(b,a,y);

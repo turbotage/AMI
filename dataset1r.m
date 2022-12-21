@@ -1,4 +1,11 @@
+% AMI Project 2022 - Rebecca
+% Dataset 1 - H-scan
+%--------------------------------------------------------------------------
+% load dataset 1 only image contraction at full activation vs full rest
+% should be conducted on one frame with only the H-scan for both full
+% activation and at rest.
 
+% See separate script dataset1r.m
 % --------
 % AT REST
 % --------
@@ -121,11 +128,11 @@ Bmodesrgb(:,:,2) = (Bmodes(:,:)-min(Bmodes(:,:),[],'all')) / (max(Bmodes(:,:),[]
 Bmodesrgbhi(:,:,1) = BmodesrgbHr(:,:,1);
 Bmodesrgblo(:,:,3) = BmodesrgbHr(:,:,3);
 
-% BmodesrgbHr(:,:,1) = medfilt2(BmodesrgbHr(:,:,1));
-% BmodesrgbHr(:,:,3) = medfilt2(BmodesrgbHr(:,:,3));
-% Bmodesrgb = medfilt2(Bmodesrgb(:,:,2));
-% Bmodesrgbhi = medfilt2(Bmodesrgbhi(:,:,1));
-% Bmodesrgblo = medfilt2(Bmodesrgblo(:,:,3));
+BmodesrgbHr(:,:,1) = medfilt2(BmodesrgbHr(:,:,1));
+BmodesrgbHr(:,:,3) = medfilt2(BmodesrgbHr(:,:,3));
+Bmodesrgb = medfilt2(Bmodesrgb(:,:,2));
+Bmodesrgbhi = medfilt2(Bmodesrgbhi(:,:,1));
+Bmodesrgblo = medfilt2(Bmodesrgblo(:,:,3));
 
 %% analyze intensity in a line; over signal time (depth)
 nodepths=size(BmodesrgbHr,1);

@@ -1,38 +1,7 @@
-%  AMI Project 2022
-
-%% load dataset 1 only image contraction at full activation vs full rest
-% should be conducted on one frame with only the H-scan for both full
-% activation and at rest.
-
-% See separate script dataset1r.m
-
-%% load dataset 2 stimulated contraction w ~1.6Hz 1 muscle complex
-% should be conducted on several frames and is to be filtered using
-% svd only.
-% ----------------------
-% Pre-processing data
-%-----------------------
-% rfmat_dsf = single(load('181023_1311_rs.mat').rfmat_downsampled);
-% 
-% Bmodes = sqrt(abs(hilbert(squeeze(rfmat_dsf(:,:,:)))));
-% shape = size(Bmodes);
-% Bmodes_f = reshape(Bmodes, shape(1)*shape(2), shape(3));
-
-% ---------------------
-% SVD 2 - Viktors part
-%-----------------------
-% [U,S,V] = svd(Bmodes_f, 'econ');
-% 
-% Snew = S;
-% Snew(25:end, 25:end) = 0;
-% Snew(1:20,1:20) = 0;
-% 
-% Bmodes_fnew = U * Snew * V';
-% Bmodes_new = reshape(Bmodes_fnew, shape(1), shape(2), shape(3));
-
-% MY COMPUTER CAN'T HANDLE THIS DATASET!
-
-%% load dataset 3 voluntary contraction w ~5-25Hz 2-4 muscle complexes
+% AMI Project 2022 - Rebecca
+% Dataset 3 - H-scan
+%--------------------------------------------------------------------------
+% load dataset 3 voluntary contraction w ~5-25Hz 10-15 muscle complexes
 % should be conducted on several frames and is to be filtered using both
 % svd and H-scan
 % ----------------------
@@ -49,9 +18,8 @@ Bmodes = single(sqrt(abs(hilbert(squeeze(RF_MAT(:,:,:))))));
 shape = size(Bmodes);
 
 % ---------------------
-% SVD 3 - Viktors part
+% SVD - Viktors part
 %-----------------------
-
 
 % ---------------------
 % H-scan 3
@@ -87,7 +55,7 @@ title(['GH_{',num2str(ordhi),'}'])
 ylim([min(GHhi,[],'all')*1.25 max(GHhi,[],'all')*1.25]);
 sgtitle('Gaussian weighted Hermite polynomials')
 
-% Plot one spectrum of one imageline for comparison with the GH spectra
+%% Plot one spectrum of one imageline for comparison with the GH spectra
 frame=floor(size(RF_MAT,3)/2); % 
 line=floor(size(RF_MAT,2)/2); %
 
@@ -294,48 +262,20 @@ lineFramesHblu(isnan(lineFramesHblu))=0;
 
 [X,Y] = meshgrid(frames,depths);
 figure
+g = gcf;
+g.WindowState = 'maximized';
 subplot(1,2,1)
-surf(X,Y,lineFramesHred);
+surf(X,Y,lineFramesHred,'lineStyle','none');
 title('red channel')
 xlabel('Frame t [ms]');
 ylabel('Depth (image line time)');
 zlabel('Mean intensity at various depths I [%]');
+
 subplot(1,2,2)
-surf(X,Y,lineFramesHblu);
+surf(X,Y,lineFramesHblu,'lineStyle','none');
+colorbar;
 title('blue channel')
 xlabel('Frame t [ms]');
 ylabel('Depth (image line time)');
 zlabel('Mean intensity at various depths I [%]');
 sgtitle('Comparison of channel mean intensities for all frames over depth');
-
-%% load TVI (Validation) data
-% ---------------------
-% SVD 2 and 3 VS TVI - Viktors part
-%-----------------------
-% --------------------
-% Pre-processing data 
-%---------------------
-% fn_STR = '181023_1311tvi_rs.mat';
-% h = matfile(fn_STR);
-% tvif_d = single(h.tvi_downsampled(:,:,1:250));
-% tvif_d = sqrt(abs(hilbert(squeeze(tvif_d(:,:,:)))));
-
-%-------------------------
-% Filtering and comparing
-%-------------------------
-% Prefiltering
-% median3 and butter order 4 on both TVI and SVD, keeping the freqs in
-% range 5-25 Hz
-
-% tripple median filtering
-% Bmodes_fin=medfilt3(Bmodes_new);
-% tvi_fin=medfilt3(tvif);
-
-% spatial filtering
-% C = conv2(A, B8);
-
-% freq filtering
-% idea: bandpass on every pixel intensity over activation time 5-15(30) Hz
-% for dataset 2 but around 1.5 Hz for dataset 3
-% [b,a] = butter(4,[5 25]./(Fsamp/2),'bandpass');
-% y_filt = filtfilt(b,a,y);
