@@ -36,41 +36,4 @@ disp('Pre SVD Filters')
 svd_dat_fsvd = run_svd(svd_dat_f, 5, 200);
 disp('Run SVD')
 %%
-draw_std2(svd_dat_f, svd_dat_fsvd);
-%%
-draw_pic2(svd_dat_f, svd_dat_fsvd);
 
-%%
-draw_pic(tvi_dat_f);
-
-%%
-svd_conved = mypertempconv(svd_dat_f, ones(20,3)/30);
-
-%%
-std_svd_img = std(svd_conved, 0, 3);
-ptile = prctile(std_svd_img,[1,99]);
-
-figure;
-imagesc(std_svd_img(1:1000,:));
-colormap gray;
-clim(ptile);
-
-
-%%
-
-upper_signal_tvi = squeeze(mean(tvi_dat_f(300:305,60:65,:), [1,2]));
-lower_signal_tvi = squeeze(mean(tvi_dat_f(800:805,60:65,:), [1,2]));
-
-figure;
-plot(upper_signal_tvi, 'r-');
-hold on;
-plot(lower_signal_tvi, 'b-');
-
-%%
-upper_signal_svd = squeeze(mean(svd_dat_fsvd(300:305,60:65,:), [1,2]));
-lower_signal_svd = squeeze(mean(svd_dat_fsvd(800:805,60:65,:), [1,2]));
-
-figure;
-plot(upper_signal_svd, 'r-');
-hold on;
-plot(lower_signal_svd, 'b-');
