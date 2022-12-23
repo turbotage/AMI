@@ -33,7 +33,7 @@ svd_dat_f = mybandpass(svd_dat,4,[3, 30],500);
 svd_dat_f = mymedfilt(svd_dat_f, [10,3]);
 disp('Pre SVD Filters')
 %% Run SVD
-svd_dat_fsvd = run_svd(svd_dat_f, 5, 200);
+svd_dat_fsvd = run_svd(svd_dat_f, , 1000);
 disp('Run SVD')
 %%
 draw_std2(svd_dat_f, svd_dat_fsvd);

@@ -1,30 +1,35 @@
-function draw_pic2(mat1, mat2)
+function draw_pic2(mat1, mat2, pause_time, perc)
+    if nargin < 3
+        pause_time = 0.02;
+        perc = [1, 99];
+    elseif nargin < 4
+        perc = [1, 99];
+    end
+
+    ptiles1 = prctile(mat1,perc,[1,2,3]);
+    ptiles2 = prctile(mat2,perc,[1,2,3]);
+
     figure(1);
     Q = size(mat1,3);
     W1 = mat1(:,:,1);
-    W1 = mat2gray(W1);
 
     W2 = mat2(:,:,1);
-    W2 = mat2gray(W2);
 
     subplot(1,2,1);
-    img1 = imshow(W1);
-    axis('square')
+    img1 = imagesc(W1);
+    clim(ptiles1);
 
     subplot(1,2,2);
-    img2 = imshow(W2);
-    axis('square')
+    img2 = imagesc(W2);
+    clim(ptiles2);
     
-    pause(2);
     for K = 2:Q
         W1 = mat1(:,:,K);
-        W1 = mat2gray(W1);
         W2 = mat2(:,:,K);
-        W2 = mat2gray(W2);
         set(img1, 'CData', W1);
         set(img2, 'CData', W2);
         %drawnow limitrate;
         drawnow();
-        pause(0.02);
+        pause(pause_time);
     end
 end
