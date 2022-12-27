@@ -11,7 +11,6 @@ load("RF_MAT.mat");
 RF_MAT= single(squeeze(RF_MAT(:,:,:)));
 TGC_VECT = linspace(1,10,size(RF_MAT,1))';
 TCG_MAT = repmat(TGC_VECT,[1 size(RF_MAT,2)]);
-
 RF_MAT=RF_MAT.*TCG_MAT;
 
 Bmodes = single(sqrt(abs(hilbert(squeeze(RF_MAT(:,:,:))))));
@@ -120,14 +119,6 @@ end
 
 Bmodesrgbhi(:,:,1,:)=BmodesrgbH(:,:,1,:);
 Bmodesrgblo(:,:,3,:)=BmodesrgbH(:,:,3,:);
-
-for j=1:floor(noframes)
-    BmodesrgbH(:,:,1,j) = medfilt2(BmodesrgbH(:,:,1,j));
-    BmodesrgbH(:,:,3,j) = medfilt2(BmodesrgbH(:,:,3,j));
-    Bmodesrgb(:,:,2,j) = medfilt2(Bmodesrgb(:,:,2,j));
-    Bmodesrgbhi(:,:,1,j) = medfilt2(Bmodesrgbhi(:,:,1,j));
-    Bmodesrgblo(:,:,3,j) = medfilt2(Bmodesrgblo(:,:,3,j));
-end
 
 %% plot H-scan filtering results
 draw_pic(Bmodes(:,:,1:noframes), Bmodeslo, Bmodeshi, [] , 0.05,9);

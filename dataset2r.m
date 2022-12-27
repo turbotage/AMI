@@ -10,12 +10,11 @@
 % 1311 - 8Hz stim
 rfmat = single(load('181023_1311_rs.mat').rfmat_downsampled);
 rfmat = rfmat(1:1000,:,:);
-TGC_VECT = linspace(1,10,size(rfmat,1))';
-TCG_MAT = repmat(TGC_VECT,[1 size(rfmat,2)]);
-rfmat=rfmat.*TCG_MAT;
+tgc_vect = linspace(1,10,size(rfmat,1))';
+tgc_mat = repmat(tgc_vect,[1 size(rfmat,2)]);
+rfmat=rfmat.*tgc_mat;
 
-roimat = load('181023_1311_ROI.mat');
-roimat = roimat.ROI;
+roimat = load('181023_1311_ROI.mat').ROI;
 
 Bmodes = sqrt(abs(hilbert(squeeze(rfmat(:,:,:)))));
 shape = size(Bmodes);
@@ -147,15 +146,8 @@ for j=1:floor(noframes)
  	Bmodesrgb(:,:,2,j) = (Bmodes(:,:,j)-min(Bmodes(:,:,j),[],'all')) / (max(Bmodes(:,:,j),[],'all')-min(Bmodes(:,:,j),[],'all'));
 end
 
-[Bmodesrgbhi(:,:,1,:),~,Bmodesrgblo(:,:,3,:)]=imsplit(BmodesrgbH);
-
-for j=1:floor(noframes)
-    BmodesrgbH(:,:,1,j) = medfilt2(BmodesrgbH(:,:,1,j));
-    BmodesrgbH(:,:,3,j) = medfilt2(BmodesrgbH(:,:,3,j));
-    Bmodesrgb(:,:,2,j) = medfilt2(Bmodesrgb(:,:,2,j));
-    Bmodesrgbhi(:,:,1,j) = medfilt2(Bmodesrgbhi(:,:,1,j));
-    Bmodesrgblo(:,:,3,j) = medfilt2(Bmodesrgblo(:,:,3,j));
-end
+Bmodesrgbhi(:,:,1,:)=BmodesrgbH(:,:,1,:);
+Bmodesrgblo(:,:,3,:)=BmodesrgbH(:,:,3,:);
 
 %% plot H-scan filtering results
 draw_pic(Bmodes(:,:,1:noframes), Bmodeslo, Bmodeshi, [] , 0.05,9);
