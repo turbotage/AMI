@@ -10,7 +10,7 @@
 % 1311 - 8Hz stim
 rfmat = single(load('181023_1311_rs.mat').rfmat_downsampled);
 rfmat = rfmat(1:1000,:,:);
-tgc_vect = linspace(1,10,size(rfmat,1))';
+tgc_vect = linspace(1,5,size(rfmat,1))';
 tgc_mat = repmat(tgc_vect,[1 size(rfmat,2)]);
 rfmat=rfmat.*tgc_mat;
 

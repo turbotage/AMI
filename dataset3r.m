@@ -9,7 +9,7 @@
 %-----------------------
 load("RF_MAT.mat");
 RF_MAT= single(squeeze(RF_MAT(:,:,:)));
-TGC_VECT = linspace(1,10,size(RF_MAT,1))';
+TGC_VECT = linspace(1,7,size(RF_MAT,1))';
 TCG_MAT = repmat(TGC_VECT,[1 size(RF_MAT,2)]);
 RF_MAT=RF_MAT.*TCG_MAT;
 
