@@ -7,14 +7,37 @@
 % ----------------------
 % Pre-processing data
 %-----------------------
-% 1311 - 8Hz stim
-rfmat = single(load('181023_1311_rs.mat').rfmat_downsampled);
+% 1555 - 8Hz stim
+rfmat = single(load('C:\Users\Rebecca Viklund\Desktop\AMI project\AMI\Dataset_2\181023_1555_rsf.mat').rfdat); %.rfmat_downsampled);
 rfmat = rfmat(1:1000,:,:);
 tgc_vect = linspace(1,5,size(rfmat,1))';
 tgc_mat = repmat(tgc_vect,[1 size(rfmat,2)]);
 rfmat=rfmat.*tgc_mat;
 
-roimat = load('181023_1311_ROI.mat').ROI;
+%% signal profile
+%  analyzes mean intensity off all frames; over signal time (depth)
+
+for l=1:size(rfmat,3)
+    for k=1:size(rfmat,1)
+        for j=1:size(rfmat,2)
+            Temp(j)=rfmat(k,j,l);
+        end
+    lineFrames(k,l)=mean(Temp);
+    end
+end
+
+lineFrames(isnan(lineFrames))=0;
+
+[X,Y] = meshgrid(1:size(rfmat,3),1:size(rfmat,1));
+figure
+surf(X,Y,lineFrames,'lineStyle','none');
+title('Dataset 2 1555 8 Hz stim mean signal profile')
+xlabel('Frame t [0.5ms]');
+ylabel('Depth (image line time)');
+zlabel('Mean intensity at various depths I [%]');
+colorbar;
+%%
+roimat = load('C:\Users\Rebecca Viklund\Desktop\AMI project\AMI\Dataset_2\181023_1311_ROI.mat').ROI;
 
 Bmodes = sqrt(abs(hilbert(squeeze(rfmat(:,:,:)))));
 shape = size(Bmodes);
@@ -63,22 +86,20 @@ b1 = 0.340;
 ordlo = 2;
 Hlo = hermiteH(ordlo, t./b1);
 GHlo = exp(-(t./(b1)).^2).*Hlo;
-GHlo = GHlo./sum(GHlo(:));
 
 % GH high pass
 b2 = 0.135;
 ordhi = 32;
-Hhi = hermiteH(32, t./b2); % order 32
+Hhi = hermiteH(ordhi, t./b2); % order 32
 GHhi = exp(-(t./(b2)).^2).*Hhi;
-GHhi = GHhi./sum(GHhi(:));
 
 figure(1);
 subplot(2,1,1)
-plot(t,GHlo,'b', 'LineWidth', 1.5);
+plot(t,GHlo,'r', 'LineWidth', 1.5);
 title(['GH_{',num2str(ordlo),'}'])
 ylim([min(GHlo,[],'all')*1.25 max(GHlo,[],'all')*1.25]);
 subplot(2,1,2)
-plot(t,GHhi,'r', 'LineWidth', 1.5);
+plot(t,GHhi,'b', 'LineWidth', 1.5);
 title(['GH_{',num2str(ordhi),'}'])
 ylim([min(GHhi,[],'all')*1.25 max(GHhi,[],'all')*1.25]);
 sgtitle('Gaussian weighted Hermite polynomials')
@@ -102,8 +123,8 @@ p_NORM = sqrt(pxx)./max(sqrt(pxx));
 
 figure(2); clf; hold on;
 plot(f_VECT, p_NORM,'-','color',[0 .5 0],'LineWidth', 1.5);
-plot(f_VECTlo, p_NORMlo, 'b', 'LineWidth', 1.5);
-plot(f_VECThi, p_NORMhi, 'r', 'LineWidth', 1.5);
+plot(f_VECTlo, p_NORMlo, 'r', 'LineWidth', 1.5);
+plot(f_VECThi, p_NORMhi, 'b', 'LineWidth', 1.5);
 sgtitle(['PSD for frame ',num2str(frame),' and line ',num2str(line)]);
 xlabel('Frequency f [MHz]'); ylabel('Amplitude A [1]');
 legend({'RF imageline','Low pass','High pass'});
@@ -134,143 +155,105 @@ end
 Bmodeslo=sqrt(abs(hilbert(RF_MATlo)));
 Bmodeshi=sqrt(abs(hilbert(RF_MAThi)));
 
-% rb colorcoding
+%% rb colorcoding and filtering
 BmodesrgbH = zeros(shape(1),shape(2),3,noframes);
 Bmodesrgb = zeros(shape(1),shape(2),3,noframes);
 Bmodesrgblo = zeros(shape(1),shape(2),3,noframes);
 Bmodesrgbhi = zeros(shape(1),shape(2),3,noframes);
 
-for j=1:floor(noframes)
-	BmodesrgbH(:,:,1,j) = (Bmodeshi(:,:,j)-min(Bmodeshi(:,:,j),[],'all')) / (max(Bmodeshi(:,:,j),[],'all')-min(Bmodeshi(:,:,j),[],'all')); %Bmodeshi(:,:)./mean2(Bmodeshi(:,:));
-	BmodesrgbH(:,:,3,j) = (Bmodeslo(:,:,j)-min(Bmodeslo(:,:,j),[],'all')) / (max(Bmodeslo(:,:,j),[],'all')-min(Bmodeslo(:,:,j),[],'all'));
- 	Bmodesrgb(:,:,2,j) = (Bmodes(:,:,j)-min(Bmodes(:,:,j),[],'all')) / (max(Bmodes(:,:,j),[],'all')-min(Bmodes(:,:,j),[],'all'));
-end
+BmodesrgbH(:,:,1,:) = myrgbencoder(Bmodeslo);
+BmodesrgbH(:,:,3,:) = myrgbencoder(Bmodeshi);
+Bmodesrgb(:,:,2,:) = myrgbencoder(Bmodes);
 
-Bmodesrgbhi(:,:,1,:)=BmodesrgbH(:,:,1,:);
-Bmodesrgblo(:,:,3,:)=BmodesrgbH(:,:,3,:);
+BmodesrgbH(:,:,1,:) = mymedfilt(BmodesrgbH(:,:,1,:), [15,3]);
+BmodesrgbH(:,:,3,:) = mymedfilt(BmodesrgbH(:,:,3,:), [15,3]);
+Bmodesrgb(:,:,2,:) = mymedfilt(Bmodesrgb(:,:,2,:), [15,3]);
+
+Bmodesrgblo(:,:,1,:)=BmodesrgbH(:,:,1,:);
+Bmodesrgbhi(:,:,3,:)=BmodesrgbH(:,:,3,:);
 
 %% plot H-scan filtering results
-draw_pic(Bmodes(:,:,1:noframes), Bmodeslo, Bmodeshi, [] , 0.05,9);
+draw_pic(Bmodes, Bmodeslo, Bmodeshi, [], 0.05,~);
 
 %% plot 2D colorcoded H-scan filtering results
-draw_pic(Bmodesrgb,Bmodesrgblo,Bmodesrgbhi,BmodesrgbH,0.05,10);
+draw_pic(Bmodesrgb,Bmodesrgblo,Bmodesrgbhi,BmodesrgbH,0.05,~);
 
 %% plot comparison between B-mode and H-scan
-draw_pic2(Bmodes(:,:,1:floor(noframes/4)),BmodesrgbH,0.1,11);
-
-%% Mask the image
-for j=1:noframes
-    %Hmasked(:,:,:,j) = bsxfun(@times, BmodesrgbH(:,:,:,j), cast(roimat, 'like', BmodesrgbH(:,:,:,j)));
-    Hmasked(:,:,:,j) = BmodesrgbH(:,:,:,j).*repmat(roimat,[1,1,3]);
-end
-%% plot mask vs H-scan
-opacity=.1;
-figure
-W1=BmodesrgbH(:,:,:,1);
-W2=roimat;
-W3=Hmasked(:,:,:,1);
-
-subplot(1,2,1)
-img1=image(W1,'CDataMapping','scaled');
-hold on;
-img2=image(W2,'CDataMapping','scaled','AlphaData',opacity*ones(size(roimat)));colormap gray;
-title(['H-scan with ROI overlapped at opacity ',num2str(opacity)])
-subplot(1,2,2)
-img3=image(W3,'CDataMapping','scaled');
-title('masked out image area');
-pause(2)
-for j=1:floor(noframes/4)
-    W1 = BmodesrgbH(:,:,:,j);
-    W1 = imadjust(W1, [0,1],[]);
-
-    W3 = Hmasked(:,:,:,j);
-    W3 = imadjust(W3, [0,1],[]);
-    
-    set(img1, 'CData', W1);
-    set(img2, 'CData', W2);
-    set(img3, 'CData', W3);
-
-    %drawnow limitrate;
-    drawnow();
-    clim([0,1])
-    pause(.05);
-    disp(j);
-end
+draw_pic2(Bmodes,BmodesrgbH,0.1,~);
 
 %% analyze intensity in a pixel; over measurement time (frames)
 depth=floor(size(BmodesrgbH,1)/2);
 
 for j=1:noframes
-    pixelHred(j)=Bmodesrgbhi(depth,line,1,j);
-    pixelHblu(j)=Bmodesrgblo(depth,line,3,j);
+    pixelHlo(j)=Bmodesrgblo(depth,line,1,j);
+    pixelHhi(j)=Bmodesrgbhi(depth,line,3,j);
 end
 
-pixelHred(isnan(pixelHred))=0;
-pixelHblu(isnan(pixelHblu))=0;
+pixelHhi(isnan(pixelHhi))=0;
+pixelHlo(isnan(pixelHlo))=0;
 
-% pixelHred=pixelHred/pixelHblu;
-% pixelHred=pixelHblu/pixelHred;
+pixelHlo=pixelHlo./pixelHhi;
+pixelHhi=pixelHhi./pixelHlo;
 
-[pks,locs] = findpeaks(pixelHred,frames);
-[pks1,locs1] = findpeaks(pixelHblu,frames);
+[pks,locs] = findpeaks(pixelHlo,frames);
+[pks1,locs1] = findpeaks(pixelHhi,frames);
 
-pixelHredMax=makima(locs,pks,frames);
-pixelHbluMax=makima(locs1,pks1,frames);
+pixelHloMax=makima(locs,pks,frames);
+pixelHhiMax=makima(locs1,pks1,frames);
 
 figure; clf; hold on;
-plot(frames,pixelHred,'-r');
-plot(frames,pixelHblu','-b');
-plot(frames,pixelHredMax,'-r','LineWidth',1.5);
-plot(frames,pixelHbluMax,'-b','LineWidth',1.5);
+plot(frames,pixelHlo','-r');
+plot(frames,pixelHhi,'-b');
+plot(frames,pixelHloMax,'-r','LineWidth',1.5);
+plot(frames,pixelHhiMax,'-b','LineWidth',1.5);
 %ylim([0 1]);
 xlabel('Frames t [ms]'); ylabel('Channel intensity I [%]');
-sgtitle(['Comparison of channel intensities in pixel (',num2str(line),'x',num2str(depth),')']);
-legend({'Red channel','Blue channel','Red trend','Blue trend'});
+sgtitle(['Comparison of filter channel intensities in pixel (',num2str(line),'x',num2str(depth),')']);
+legend({'Low pass','High pass','Red trend','Blue trend'});
 
 %% analyze std of intensity in each frame; over measurement time (frames)
 
 for j=1:noframes
-    frameHred(:,j) = std2(Bmodesrgbhi(:,:,1,j));
-    frameHblu(:,j) = std2(Bmodesrgblo(:,:,3,j));
+    frameHlo(:,j) = std2(Bmodesrgblo(:,:,1,j));
+    frameHhi(:,j) = std2(Bmodesrgbhi(:,:,3,j));
 end
 
-frameHred(isnan(frameHred))=0;
-frameHblu(isnan(frameHblu))=0;
+frameHhi(isnan(frameHhi))=0;
+frameHlo(isnan(frameHlo))=0;
 
-% frameHred=frameHred/frameHblu;
-% frameHred=frameHblu/frameHred;
+frameHlo=frameHlo./frameHhi;
+frameHhi=frameHhi./frameHlo;
 
 figure; clf; hold on;
-plot(frames,frameHred,'-r');
-plot(frames,frameHblu','-b');
+plot(frames,frameHlo','-r');
+plot(frames,frameHhi,'-b');
 % ylim([0 1]);
 xlabel('Frames t [ms]'); ylabel('Channel intensity std \sigma [1]');
-sgtitle(['Comparison of channel std of intensities in frames']);
-legend({'Red channel','Blue channel','Red trend','Blue trend'});
+sgtitle(['Comparison of filter channel std of intensities in frames']);
+legend({'Low pass','High pass','Red trend','Blue trend'});
 
 %% analyze intensity in a line; over signal time (depth)
 nodepths=size(BmodesrgbH,1);
 depths=1:nodepths;
 
 for j=1:nodepths
-    lineHred(j)=Bmodesrgbhi(j,line,1,frame);
-    lineHblu(j)=Bmodesrgblo(j,line,3,frame);
+    lineHlo(j)=Bmodesrgblo(j,line,1,frame);
+    lineHhi(j)=Bmodesrgbhi(j,line,3,frame);
 end
 
-lineHred(isnan(lineHred))=0;
-lineHblu(isnan(lineHblu))=0;
+lineHhi(isnan(lineHhi))=0;
+lineHlo(isnan(lineHlo))=0;
 
-% lineHred=lineHred/lineHblu;
-% lineHred=lineHblu/lineHred;
+lineHhip=lineHhi./lineHlo;
+lineHlop=lineHlo./lineHhi;
 
 figure(3); clf; hold on;
-plot(1:nodepths,lineHred,'r');
-plot(1:nodepths,lineHblu,'b');
-xlabel('Depth (image line time)');
-sgtitle(['Comparison of channel intensities for frame ',num2str(frame),' over line ',num2str(line)]);
+plot(depths,lineHlop,'r');
+plot(depths,lineHhip,'b');
+sgtitle(['Comparison of filter channel intensities for frame ',num2str(frame),' over line ',num2str(line)]);
 legend({'Red channel','Blue channel'});
 xlabel('Depth (image line time)'); ylabel('Channel intensity I [%]');
-legend({'Red channel','Blue channel','Red trend','Blue trend'});
+legend({'Low pass','High pass','Red trend','Blue trend'});
 
 %% analyze intensity in one frame; over signal time (depth)
 nolines=size(BmodesrgbH,2);
@@ -278,63 +261,101 @@ lines=1:nolines;
 
 for k=1:nodepths
     for j=1:nolines
-        Tempr(j)=Bmodesrgbhi(k,j,1,frame);
-        Tempb(j)=Bmodesrgblo(k,j,3,frame);
+        Temphi(j)=Bmodesrgbhi(k,j,3,frame);
+        Templo(j)=Bmodesrgblo(k,j,1,frame);
     end
-    lineFrameHred(k)=mean(Tempr);
-    lineFrameHblu(k)=mean(Tempb);
+    lineFrameHhi(k)=mean(Temphi);
+    lineFrameHlo(k)=mean(Templo);
 end
 
-lineFrameHred(isnan(lineFrameHred))=0;
-lineFrameHblu(isnan(lineFrameHblu))=0;
+lineFrameHhi(isnan(lineFrameHhi))=0;
+lineFrameHlo(isnan(lineFrameHlo))=0;
 
-% lineFrameHred=lineFrameHred/lineFrameHblu;
-% lineFrameHred=lineFrameHblu/lineFrameHred;
+lineFrameHhip=lineFrameHhi./lineFrameHlo;
+lineFrameHlop=lineFrameHlo./lineFrameHhi;
 
 figure(3); clf; hold on;
-plot(depths,lineFrameHred,'r');
-plot(depths,lineFrameHblu,'b');
-xlabel('Depth (image line time)');
+plot(depths,lineFrameHlop,'r');
+plot(depths,lineFrameHhip,'b');
 sgtitle(['Comparison of channel mean intensities for\newlineframe ',num2str(frame),' over depth']);
-legend({'Red channel','Blue channel'});
 xlabel('Depth (image line time)'); ylabel('Channel intensity I [%]');
-legend({'Red channel','Blue channel','Red trend','Blue trend'});
+legend({'Low pass','High pass','Red trend','Blue trend'});
 
 %% analyze mean intensity off all frames; over signal time (depth)
+clear Templo Temphi lineFramesHlo lineFramesHhi
 
-for l=1:noframes
+for m=1:noframes
     for k=1:nodepths
         for j=1:nolines
-            Tempr(j)=Bmodesrgbhi(k,j,1,l);
-            Tempb(j)=Bmodesrgblo(k,j,3,l);
+            Templo(j)=Bmodesrgblo(k,j,1,m);
+            Temphi(j)=Bmodesrgbhi(k,j,3,m);
         end
-    lineFramesHred(k,l)=mean(Tempr);
-    lineFramesHblu(k,l)=mean(Tempb);
+    lineFramesHhi(k,m)=mean(Temphi);
+    lineFramesHlo(k,m)=mean(Templo);
     end
 end
 
-lineFramesHred(isnan(lineFramesHred))=0;
-lineFramesHblu(isnan(lineFramesHblu))=0;
+lineFramesHhi(isnan(lineFramesHhi))=0;
+lineFramesHlo(isnan(lineFramesHlo))=0;
 
-% lineFramesHred=lineFramesHred/lineFramesHblu;
-% lineFramesHred=lineFramesHblu/lineFramesHred;
+lineFramesHlop=lineFramesHlo./lineFramesHhi;
+lineFramesHhip=lineFramesHhi./lineFramesHlo;
 
 [X,Y] = meshgrid(frames,depths);
 figure
 g = gcf;
 g.WindowState = 'maximized';
 subplot(1,2,1)
-surf(X,Y,lineFramesHred,'lineStyle','none');
-title('red channel')
+surf(X,Y,lineFramesHlop,'lineStyle','none');
+title('Low pass channel')
 xlabel('Frame t [ms]');
 ylabel('Depth (image line time)');
 zlabel('Mean intensity at various depths I [%]');
 
 subplot(1,2,2)
-surf(X,Y,lineFramesHblu,'lineStyle','none');
+surf(X,Y,lineFramesHhip,'lineStyle','none');
 colorbar;
-title('blue channel')
+title('High pass channel')
 xlabel('Frame t [ms]');
 ylabel('Depth (image line time)');
 zlabel('Mean intensity at various depths I [%]');
 sgtitle('Comparison of channel mean intensities for all frames over depth');
+
+%% Mask the image
+% for j=1:noframes
+%     Hmasked(:,:,:,j) = BmodesrgbH(:,:,:,j).*repmat(roimat,[1,1,3]);
+% end
+% 
+% % plot mask vs H-scan
+% opacity=.1;
+% figure
+% W1=BmodesrgbH(:,:,:,1);
+% W2=roimat;
+% W3=Hmasked(:,:,:,1);
+% 
+% subplot(1,2,1)
+% img1=image(W1,'CDataMapping','scaled');
+% hold on;
+% img2=image(W2,'CDataMapping','scaled','AlphaData',opacity*ones(size(roimat)));colormap gray;
+% title(['H-scan with ROI overlapped at opacity ',num2str(opacity)])
+% subplot(1,2,2)
+% img3=image(W3,'CDataMapping','scaled');
+% title('masked out image area');
+% pause(2)
+% for j=1:floor(noframes/4)
+%     W1 = BmodesrgbH(:,:,:,j);
+%     W1 = imadjust(W1, [0,1],[]);
+% 
+%     W3 = Hmasked(:,:,:,j);
+%     W3 = imadjust(W3, [0,1],[]);
+%     
+%     set(img1, 'CData', W1);
+%     set(img2, 'CData', W2);
+%     set(img3, 'CData', W3);
+% 
+%     %drawnow limitrate;
+%     drawnow();
+%     clim([0,1])
+%     pause(.05);
+%     disp(j);
+% end

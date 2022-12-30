@@ -19,10 +19,10 @@ RF = double(RF(1:2177,:,frame)); %1:2177 corresp to 4cm depth in this dataset..
 % TGC - Only needed for dataset 1. TGC = "time gain compensation"
 % It amplifies the signal proportional to the US depth since it weakens as
 % it interacts with tissue.
-TGC_VECT = linspace(1,10,size(RF,1))';
-TGC_MAT = repmat(TGC_VECT,[1 size(RF,2)]);
+TGC_V = linspace(1,10,size(RF,1))';
+TGC_M = repmat(TGC_V,[1 size(RF,2)]);
 
-RF = RF.*TGC_MAT;
+RF = RF.*TGC_M;
 
 % Here a "beamforming" is conducted. This is only needed for dataset 1.
 % This is due to the collection method "plane-wave imaging" used which
@@ -35,6 +35,8 @@ BF = BF - repmat(mean(BF,1),[size(BF,1) 1]);
 RF = BF;
 
 RF = single(RF(:,:));
+
+%%
 Bmodes = single(sqrt(abs(hilbert(RF(:,:)))));
 shape = size(Bmodes);
 % ----------------------
@@ -49,22 +51,20 @@ b1 = 0.13;
 ordlo = 8;
 Hlo = hermiteH(ordlo, t./b1);
 GHlo = exp(-(t./(b1)).^2).*Hlo;
-GHlo = GHlo./sum(GHlo(:));
 
 % GH high pass
 b2 = 0.135;
 ordhi = 32;
-Hhi = hermiteH(32, t./b2); % order 32
+Hhi = hermiteH(ordhi, t./b2); % order 32
 GHhi = exp(-(t./(b2)).^2).*Hhi;
-GHhi = GHhi./sum(GHhi(:));
 
 figure(1);
 subplot(2,1,1)
-plot(t,GHlo,'b', 'LineWidth', 1.5);
+plot(t,GHlo,'r', 'LineWidth', 1.5);
 title(['GH_{',num2str(ordlo),'}'])
 ylim([min(GHlo,[],'all')*1.25 max(GHlo,[],'all')*1.25]);
 subplot(2,1,2)
-plot(t,GHhi,'r', 'LineWidth', 1.5);
+plot(t,GHhi,'b', 'LineWidth', 1.5);
 title(['GH_{',num2str(ordhi),'}'])
 ylim([min(GHhi,[],'all')*1.25 max(GHhi,[],'all')*1.25]);
 sgtitle('Gaussian weighted Hermite polynomials')
@@ -91,8 +91,8 @@ p_NORM = sqrt(pxx)./max(sqrt(pxx));
 
 figure(2); clf; hold on;
 plot(f_VECT, p_NORM,'-','color',[0 .5 0],'LineWidth', 1.5);
-plot(f_VECTlo, p_NORMlo, 'b', 'LineWidth', 1.5);
-plot(f_VECThi, p_NORMhi, 'r', 'LineWidth', 1.5);
+plot(f_VECTlo, p_NORMlo, 'r', 'LineWidth', 1.5);
+plot(f_VECThi, p_NORMhi, 'b', 'LineWidth', 1.5);
 sgtitle(['PSD for frame ',num2str(frame),' and line ',num2str(line)]);
 xlabel('Frequency f [MHz]'); ylabel('Amplitude A [1]');
 legend({'RF imageline','Low pass','High pass'});
@@ -121,42 +121,44 @@ Bmodesrgb = zeros(shape(1),shape(2),3);
 Bmodesrgblo = zeros(shape(1),shape(2),3);
 Bmodesrgbhi = zeros(shape(1),shape(2),3);
 
-BmodesrgbHr(:,:,1) = (Bmodeshi(:,:)-min(Bmodeshi(:,:),[],'all')) / (max(Bmodeshi(:,:),[],'all')-min(Bmodeshi(:,:),[],'all')); %Bmodeshi(:,:)./mean2(Bmodeshi(:,:));
-BmodesrgbHr(:,:,3) = (Bmodeslo(:,:)-min(Bmodeslo(:,:),[],'all')) / (max(Bmodeslo(:,:),[],'all')-min(Bmodeslo(:,:),[],'all'));
-Bmodesrgb(:,:,2) = (Bmodes(:,:)-min(Bmodes(:,:),[],'all')) / (max(Bmodes(:,:),[],'all')-min(Bmodes(:,:),[],'all'));
+BmodesrgbHr(:,:,1) = myrgbencoder(Bmodeslo);
+BmodesrgbHr(:,:,3) = myrgbencoder(Bmodeshi);
+Bmodesrgb(:,:,2) = myrgbencoder(Bmodes);
 
-Bmodesrgbhi(:,:,1) = BmodesrgbHr(:,:,1);
-Bmodesrgblo(:,:,3) = BmodesrgbHr(:,:,3);
+Bmodesrgblo(:,:,1) = BmodesrgbHr(:,:,1);
+Bmodesrgbhi(:,:,3) = BmodesrgbHr(:,:,3);
 
-BmodesrgbHr(:,:,1) = medfilt2(BmodesrgbHr(:,:,1));
-BmodesrgbHr(:,:,3) = medfilt2(BmodesrgbHr(:,:,3));
-Bmodesrgb = medfilt2(Bmodesrgb(:,:,2));
-Bmodesrgbhi = medfilt2(Bmodesrgbhi(:,:,1));
-Bmodesrgblo = medfilt2(Bmodesrgblo(:,:,3));
+
+BmodesrgbHr(:,:,1) = medfilt2(BmodesrgbHr(:,:,1),[3,22]);
+BmodesrgbHr(:,:,3) = medfilt2(BmodesrgbHr(:,:,3),[3,22]);
+Bmodesrgb(:,:,2) = medfilt2(Bmodesrgb(:,:,2),[3,22]);
+
+Bmodesrgblo(:,:,1) = BmodesrgbHr(:,:,1);
+Bmodesrgbhi(:,:,3) = BmodesrgbHr(:,:,3);
 
 %% analyze intensity in a line; over signal time (depth)
 nodepths=size(BmodesrgbHr,1);
 depths=1:nodepths;
 
 for j=1:nodepths
-    lineHred(j)=Bmodesrgbhi(j,line,1,frame);
-    lineHblu(j)=Bmodesrgblo(j,line,3,frame);
+    lineHlo(j)=Bmodesrgblo(j,line,1);
+    lineHhi(j)=Bmodesrgbhi(j,line,3);
 end
 
-lineHred(isnan(lineHred))=0;
-lineHblu(isnan(lineHblu))=0;
+lineHlo(isnan(lineHlo))=0;
+lineHhi(isnan(lineHhi))=0;
 
-% lineHred=lineHred/lineHblu;
-% lineHred=lineHblu/lineHred;
+lineHlo=lineHlo./lineHhi;
+lineHhi=lineHhi./lineHlo;
 
 figure(3); clf; hold on;
-plot(depths,lineHred,'r');
-plot(depths,lineHblu,'b');
+plot(depths,lineHlo,'r');
+plot(depths,lineHhi,'b');
 xlabel('Depth (image line time)');
-sgtitle(['Comparison of channel intensities for frame ',num2str(frame),' over line ',num2str(line)]);
+sgtitle(['Comparison of filter channel intensities for frame\newline',num2str(frame),' over line ',num2str(line)]);
 legend({'Red channel','Blue channel'});
 xlabel('Depth (image line time)'); ylabel('Channel intensity I [%]');
-legend({'Red channel','Blue channel','Red trend','Blue trend'});
+legend({'High pass','Low pass'});
 
 %% analyze intensity in one frame; over signal time (depth)
 nolines=size(BmodesrgbHr,2);
@@ -164,36 +166,36 @@ lines=1:nolines;
 
 for k=1:nodepths
     for j=1:nolines
-        Tempr(j)=Bmodesrgbhi(k,j,1,frame);
-        Tempb(j)=Bmodesrgblo(k,j,3,frame);
+        Templo(j)=Bmodesrgblo(k,j,1);
+        Temphi(j)=Bmodesrgbhi(k,j,3);
     end
-    lineFrameHred(k)=mean(Tempr);
-    lineFrameHblu(k)=mean(Tempb);
+    lineFrameHlo(k)=mean(Templo);
+    lineFrameHhi(k)=mean(Temphi);
 end
 
-lineFrameHred(isnan(lineFrameHred))=0;
-lineFrameHblu(isnan(lineFrameHblu))=0;
+lineFrameHlo(isnan(lineFrameHlo))=0;
+lineFrameHhi(isnan(lineFrameHhi))=0;
 
-% lineFrameHred=lineFrameHred/lineFrameHblu;
-% lineFrameHred=lineFrameHblu/lineFrameHred;
+lineFrameHlo=lineFrameHlo./lineFrameHhi;
+lineFrameHhi=lineFrameHhi./lineFrameHlo;
 
 figure(3); clf; hold on;
-plot(depths,lineFrameHred,'r');
-plot(depths,lineFrameHblu,'b');
+plot(depths,lineFrameHhi,'r');
+plot(depths,lineFrameHlo,'b');
 xlabel('Depth (image line time)');
 sgtitle(['Comparison of channel mean intensities for\newlineframe ',num2str(frame),' over depth']);
 legend({'Red channel','Blue channel'});
 xlabel('Depth (image line time)'); ylabel('Channel intensity I [%]');
-legend({'Red channel','Blue channel','Red trend','Blue trend'});
+legend({'Red channel','Blue channel'});
 
 %% plot H-scan filtering results
-draw_pic(Bmodes(:,:), Bmodeslo, Bmodeshi, [] , 0.05,4);
+draw_pic(Bmodes,Bmodeslo,Bmodeshi,[],0.05,~);
 
 %% plot 2D colorcoded H-scan filtering results
-draw_pic(Bmodesrgb,Bmodesrgblo,Bmodesrgbhi,BmodesrgbHr,0.05,5);
+draw_pic(Bmodesrgb,Bmodesrgblo,Bmodesrgbhi,BmodesrgbHr,0.05,~);
 
 %% plot comparison between B-mode and H-scan
-draw_pic2(Bmodes,BmodesrgbHr,0.05,6);
+draw_pic2(Bmodes,BmodesrgbHr,0.05,~);
 
 %% --------
 % AT WORK
@@ -205,13 +207,13 @@ frame=floor(30/2); % Chose a frame, for dataset 1 one is sufficient for the repo
 %-----------------------
 RF = double(RF(1:2177,:,frame)); %1:2177 corresp to 4cm depth in this dataset..
 
-% TGC - Only needed for dataset 1. TGC = "time gain compensation"
+% TGC - "time gain compensation"
 % It amplifies the signal proportional to the US depth since it weakens as
 % it interacts with tissue.
-TGC_VECT = linspace(1,10,size(RF,1))';
-TGC_MAT = repmat(TGC_VECT,[1 size(RF,2)]);
+TGC_V = linspace(1,10,size(RF,1))';
+TGC_M = repmat(TGC_V,[1 size(RF,2)]);
 
-RF = RF.*TGC_MAT;
+RF = RF.*TGC_M;
 
 % Here a "beamforming" is conducted. This is only needed for dataset 1.
 % This is due to the collection method "plane-wave imaging" used which
@@ -224,6 +226,8 @@ BF = BF - repmat(mean(BF,1),[size(BF,1) 1]);
 RF = BF;
 
 RF= single(squeeze(RF(:,:,:)));
+
+%%
 Bmodes = single(sqrt(abs(hilbert(squeeze(RF(:,:,:))))));
 
 % ----------------------
@@ -238,22 +242,20 @@ b1 = 0.13;
 ordlo = 8;
 Hlo = hermiteH(ordlo, t./b1);
 GHlo = exp(-(t./(b1)).^2).*Hlo;
-GHlo = GHlo./sum(GHlo(:));
 
 % GH high pass
 b2 = 0.135;
 ordhi = 32;
-Hhi = hermiteH(32, t./b2); % order 32
+Hhi = hermiteH(ordhi, t./b2); % order 32
 GHhi = exp(-(t./(b2)).^2).*Hhi;
-GHhi = GHhi./sum(GHhi(:));
 
 figure(1);
 subplot(2,1,1)
-plot(t,GHlo,'b', 'LineWidth', 1.5);
+plot(t,GHlo,'r', 'LineWidth', 1.5);
 title(['GH_{',num2str(ordlo),'}'])
 ylim([min(GHlo,[],'all')*1.25 max(GHlo,[],'all')*1.25]);
 subplot(2,1,2)
-plot(t,GHhi,'r', 'LineWidth', 1.5);
+plot(t,GHhi,'b', 'LineWidth', 1.5);
 title(['GH_{',num2str(ordhi),'}'])
 ylim([min(GHhi,[],'all')*1.25 max(GHhi,[],'all')*1.25]);
 sgtitle('Gaussian weighted Hermite polynomials')
@@ -280,8 +282,8 @@ p_NORM = sqrt(pxx)./max(sqrt(pxx));
 
 figure(2); clf; hold on;
 plot(f_VECT, p_NORM,'-','color',[0 .5 0],'LineWidth', 1.5);
-plot(f_VECTlo, p_NORMlo, 'b', 'LineWidth', 1.5);
-plot(f_VECThi, p_NORMhi, 'r', 'LineWidth', 1.5);
+plot(f_VECTlo, p_NORMlo, 'r', 'LineWidth', 1.5);
+plot(f_VECThi, p_NORMhi, 'b', 'LineWidth', 1.5);
 sgtitle(['PSD for frame ',num2str(frame),' and line ',num2str(line)]);
 xlabel('Frequency f [MHz]'); ylabel('Amplitude A [1]');
 legend({'RF imageline','Low pass','High pass'});
@@ -291,9 +293,11 @@ ylim([	min([p_NORMlo p_NORMhi p_NORM],[],'all')*1.25...
 %% ---------------------------
 % 2D H-scan conv and rgb encoding
 %-----------------------------
-nolines=size(RF,2);
+clear RFlo RFhi
+clear Bmodeslo Bmodeshi
+
 % convolution
-for k=1:nolines
+for k=1:128
 	RFlo(:,k)=conv(RF(:,k),GHlo,'same')./sqrt(Elo);
 	RFhi(:,k)=conv(RF(:,k),GHhi,'same')./sqrt(Ehi);
 end
@@ -308,78 +312,80 @@ Bmodesrgb = zeros(shape(1),shape(2),3);
 Bmodesrgblo = zeros(shape(1),shape(2),3);
 Bmodesrgbhi = zeros(shape(1),shape(2),3);
 
-BmodesrgbH(:,:,1) = (Bmodeshi(:,:)-min(Bmodeshi(:,:),[],'all')) / (max(Bmodeshi(:,:),[],'all')-min(Bmodeshi(:,:),[],'all')); %Bmodeshi(:,:)./mean2(Bmodeshi(:,:));
-BmodesrgbH(:,:,3) = (Bmodeslo(:,:)-min(Bmodeslo(:,:),[],'all')) / (max(Bmodeslo(:,:),[],'all')-min(Bmodeslo(:,:),[],'all'));
-Bmodesrgb(:,:,2) = (Bmodes(:,:)-min(Bmodes(:,:),[],'all')) / (max(Bmodes(:,:),[],'all')-min(Bmodes(:,:),[],'all'));
 
-Bmodesrgbhi(:,:,1,:) = BmodesrgbH(:,:,1,:);
-Bmodesrgblo(:,:,3,:) = BmodesrgbH(:,:,3,:);
+BmodesrgbH(:,:,1) = myrgbencoder(Bmodeslo);
+BmodesrgbH(:,:,3) = myrgbencoder(Bmodeshi);
+Bmodesrgb(:,:,2) = myrgbencoder(Bmodes);
 
-% BmodesrgbH(:,:,1) = medfilt2(BmodesrgbH(:,:,1));
-% BmodesrgbH(:,:,3) = medfilt2(BmodesrgbH(:,:,3));
-% Bmodesrgb = medfilt2(Bmodesrgb(:,:,2));
-% Bmodesrgbhi = medfilt2(Bmodesrgbhi(:,:,1));
-% Bmodesrgblo = medfilt2(Bmodesrgblo(:,:,3));
+Bmodesrgblo(:,:,1) = BmodesrgbH(:,:,1);
+Bmodesrgbhi(:,:,3) = BmodesrgbH(:,:,3);
 
+
+BmodesrgbH(:,:,1) = medfilt2(BmodesrgbH(:,:,1),[3,22]);
+BmodesrgbH(:,:,3) = medfilt2(BmodesrgbH(:,:,3),[3,22]);
+Bmodesrgb(:,:,2) = medfilt2(Bmodesrgb(:,:,2),[3,22]);
+
+Bmodesrgblo(:,:,1) = BmodesrgbH(:,:,1);
+Bmodesrgbhi(:,:,3) = BmodesrgbH(:,:,3);
 %% analyze intensity in a line; over signal time (depth)
 nodepths=size(BmodesrgbH,1);
 depths=1:nodepths;
 
 for j=1:nodepths
-    lineHred(j)=Bmodesrgbhi(j,line,1,frame);
-    lineHblu(j)=Bmodesrgblo(j,line,3,frame);
+    lineHlo(j)=Bmodesrgblo(j,line,1);
+    lineHhi(j)=Bmodesrgbhi(j,line,3);
 end
 
-lineHred(isnan(lineHred))=0;
-lineHblu(isnan(lineHblu))=0;
+lineHlo(isnan(lineHlo))=0;
+lineHhi(isnan(lineHhi))=0;
 
-% lineHred=lineHred/lineHblu;
-% lineHred=lineHblu/lineHred;
+lineHlo=lineHlo./lineHhi;
+lineHhi=lineHhi./lineHlo;
 
 figure(3); clf; hold on;
-plot(1:nodepths,lineHred,'r');
-plot(1:nodepths,lineHblu,'b');
+plot(depths,lineHlo,'r');
+plot(depths,lineHhi,'b');
 xlabel('Depth (image line time)');
-sgtitle(['Comparison of channel intensities for frame ',num2str(frame),' over line ',num2str(line)]);
+sgtitle(['Comparison of filter channel intensities for frame\newline',num2str(frame),' over line ',num2str(line)]);
 legend({'Red channel','Blue channel'});
 xlabel('Depth (image line time)'); ylabel('Channel intensity I [%]');
-legend({'Red channel','Blue channel','Red trend','Blue trend'});
+legend({'High pass','Low pass'});
 
 %% analyze intensity in one frame; over signal time (depth)
+nolines=size(BmodesrgbH,2);
 lines=1:nolines;
 
 for k=1:nodepths
     for j=1:nolines
-        Tempr(j)=Bmodesrgbhi(k,j,1);
-        Tempb(j)=Bmodesrgblo(k,j,3);
+        Templo(j)=Bmodesrgblo(k,j,1);
+        Temphi(j)=Bmodesrgbhi(k,j,3);
     end
-    lineFrameHred(k)=mean(Tempr);
-    lineFrameHblu(k)=mean(Tempb);
+    lineFrameHlo(k)=mean(Templo);
+    lineFrameHhi(k)=mean(Temphi);
 end
 
-lineFrameHred(isnan(lineFrameHred))=0;
-lineFrameHblu(isnan(lineFrameHblu))=0;
+lineFrameHlo(isnan(lineFrameHlo))=0;
+lineFrameHhi(isnan(lineFrameHhi))=0;
 
-% lineFrameHred=lineFrameHred/lineFrameHblu;
-% lineFrameHred=lineFrameHblu/lineFrameHred;
+lineFrameHlo=lineFrameHlo./lineFrameHhi;
+lineFrameHhi=lineFrameHhi./lineFrameHlo;
 
 figure(3); clf; hold on;
-plot(depths,lineFrameHred,'r');
-plot(depths,lineFrameHblu,'b');
+plot(depths,lineFrameHlo,'r');
+plot(depths,lineFrameHhi,'b');
 xlabel('Depth (image line time)');
-sgtitle(['Comparison of channel mean intensities for\newlineframe ',num2str(frame),' over depth']);
-legend({'Red channel','Blue channel'});
+sgtitle(['Comparison of filtered channel mean intensities for\newlineframe ',num2str(frame),' over depth']);
 xlabel('Depth (image line time)'); ylabel('Channel intensity I [%]');
-legend({'Red channel','Blue channel','Red trend','Blue trend'});
+legend({'Low pass','High pass'});
 
 %% plot H-scan filtering results
-draw_pic(Bmodes(:,:), Bmodeslo, Bmodeshi, [] , 0.05,4);
+draw_pic(Bmodes,Bmodeslo, Bmodeshi,[],0.05,~);
 
 %% plot 2D colorcoded H-scan filtering results
-draw_pic(Bmodesrgb,Bmodesrgblo,Bmodesrgbhi,BmodesrgbH,0.05,5);
+draw_pic(Bmodesrgb,Bmodesrgblo,Bmodesrgbhi,BmodesrgbH,0.05,~);
 
 %% plot comparison between B-mode and H-scan
-draw_pic2(Bmodes,BmodesrgbH,0.05,6);
+draw_pic2(Bmodes,BmodesrgbH,0.05,~);
 
 %% ---------------
 % 1c Comparing muscle at rest and at work H-scan images
@@ -397,5 +403,4 @@ ylabel('Culmutative sum of occurence');
 xlabel('Normalized intensities I [1]')
 sgtitle('H-scan intensity content')
 
-%%
-draw_pic2(BmodesrgbHr,BmodesrgbH,0.05,11);
+draw_pic2(BmodesrgbHr,BmodesrgbH,0.05);

@@ -1,5 +1,5 @@
 function bandpassed = mybandpass(data, order, cutoffs, Fs)
-    [b, a] = butter(order, cutoffs / (Fs/2), "bandpass");
+    [b,a] = butter(order, cutoffs / (Fs/2), "bandpass");
     bandpassed = single(zeros(size(data)));
     for i=1:size(data,1)
         for j=1:size(data,2)
