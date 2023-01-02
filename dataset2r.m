@@ -7,8 +7,8 @@
 % ----------------------
 % Pre-processing data
 %-----------------------
-% 1555 - 8Hz stim
-rfmat = single(load('C:\Users\Rebecca Viklund\Desktop\AMI project\AMI\Dataset_2\181023_1555_rsf.mat').rfdat); %.rfmat_downsampled);
+% 0913 - 2-3Hz stim
+rfmat = single(load('C:\Users\Rebecca Viklund\Desktop\AMI project\AMI\Dataset_2\181023_0913_rsf.mat').rfdat); %.rfmat_downsampled);
 rfmat = rfmat(1:1000,:,:);
 tgc_vect = linspace(1,5,size(rfmat,1))';
 tgc_mat = repmat(tgc_vect,[1 size(rfmat,2)]);
@@ -31,7 +31,7 @@ lineFrames(isnan(lineFrames))=0;
 [X,Y] = meshgrid(1:size(rfmat,3),1:size(rfmat,1));
 figure
 surf(X,Y,lineFrames,'lineStyle','none');
-title('Dataset 2 1555 8 Hz stim mean signal profile')
+title('Dataset 2 0913 2-3 Hz stim mean signal profile')
 xlabel('Frame t [0.5ms]');
 ylabel('Depth (image line time)');
 zlabel('Mean intensity at various depths I [%]');
@@ -172,14 +172,35 @@ Bmodesrgb(:,:,2,:) = mymedfilt(Bmodesrgb(:,:,2,:), [15,3]);
 Bmodesrgblo(:,:,1,:)=BmodesrgbH(:,:,1,:);
 Bmodesrgbhi(:,:,3,:)=BmodesrgbH(:,:,3,:);
 
+%% manual climc selection
+for j=1:noframes
+    rgblomean(j)=mean2(Bmodesrgblo(:,:,:,j));
+    rgbhimean(j)=mean2(Bmodesrgbhi(:,:,:,j));
+end
+
+figure
+subplot(1,2,1)
+histogram(rgblomean,20)
+title('Low pass')
+ylabel('Culmutative sum of occurence');
+xlabel('Normalized intensities I [1]')
+subplot(1,2,2)
+histogram(rgbhimean,20)
+title('High pass')
+ylabel('Culmutative sum of occurence');
+xlabel('Normalized intensities I [1]')
+sgtitle('H-scan intensity content')
+
+climc=[0.03,0.04];
+
 %% plot H-scan filtering results
-draw_pic(Bmodes, Bmodeslo, Bmodeshi, [], 0.05,~);
+draw_pic(Bmodes, Bmodeslo, Bmodeshi, [], 0.05, []);
 
 %% plot 2D colorcoded H-scan filtering results
-draw_pic(Bmodesrgb,Bmodesrgblo,Bmodesrgbhi,BmodesrgbH,0.05,~);
+draw_pic(Bmodesrgb,Bmodesrgblo,Bmodesrgbhi,BmodesrgbH, 0.05, climc);
 
 %% plot comparison between B-mode and H-scan
-draw_pic2(Bmodes,BmodesrgbH,0.1,~);
+draw_pic2(Bmodes,BmodesrgbH, 0.1, climc);
 
 %% analyze intensity in a pixel; over measurement time (frames)
 depth=floor(size(BmodesrgbH,1)/2);

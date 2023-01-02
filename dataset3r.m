@@ -8,8 +8,8 @@
 % Pre-processing data
 %-----------------------
 load("RF_MAT.mat");
-RF_MAT= single(squeeze(RF_MAT(:,:,:)));
-TGC_VECT = linspace(1,7,size(RF_MAT,1))';
+RF_MAT= single(squeeze(RF_MAT(1:1000,:,:)));
+TGC_VECT = linspace(1,7.5,size(RF_MAT,1))';
 TCG_MAT = repmat(TGC_VECT,[1 size(RF_MAT,2)]);
 RF_MAT=RF_MAT.*TCG_MAT;
 
@@ -83,11 +83,11 @@ frame=floor(size(RF_MAT,3)/2);
 line=floor(size(RF_MAT,2)/2); 
 
 [pxxlo,flo] = pwelch(GHlo, hamming(512));
-f_VECTlo = linspace(0,Fs/2,length(pxxlo));
+f_VECTlo = linspace(0,Fs/2,length(flo));
 p_NORMlo = 0.5*pxxlo./max(pxxlo);
 
 [pxxhi,fhi] = pwelch(GHhi,hamming(512));
-f_VECThi = linspace(0,Fs/2,length(pxxhi));
+f_VECThi = linspace(0,Fs/2,length(fhi));
 p_NORMhi = 0.5*pxxhi./max(pxxhi);
 
 imLineRF = double(squeeze(RF_MAT(:,line,frame))); 
@@ -102,8 +102,8 @@ plot(f_VECThi, p_NORMhi, 'b', 'LineWidth', 1.5);
 sgtitle(['PSD for frame ',num2str(frame),' and line ',num2str(line)]);
 xlabel('Frequency f [MHz]'); ylabel('Amplitude A [1]');
 legend({'RF imageline','Low pass','High pass'});
-ylim([	min([p_NORMlo p_NORMhi p_NORM],[],'all')*1.25...
-		max([p_NORMlo p_NORMhi p_NORM],[],'all')*1.25]);
+ylim([	min([p_NORMlo p_NORMhi [p_NORM;ones(length(p_NORMlo)-length(p_NORM),1)]],[],'all')*1.15...
+		max([p_NORMlo p_NORMhi [p_NORM;zeros(length(p_NORMlo)-length(p_NORM),1)]],[],'all')*1.15]);
 
 % computing analytic energies for conv
 Elo=prod(1:2:(2*ordlo-1))*sqrt(pi/2);
@@ -114,7 +114,7 @@ Ehi=prod(1:2:(2*ordhi-1))*sqrt(pi/2);
 %-----------------------------
 clear RF_MATlo RF_MAThi
 clear Bmodeslo Bmodeshi
-noframes=500;
+noframes=size(RF_MAT,3);
 frames=1:floor(noframes);
 
 % convolution
@@ -146,14 +146,35 @@ Bmodesrgb(:,:,2,:) = mymedfilt(Bmodesrgb(:,:,2,:), [15,3]);
 Bmodesrgblo(:,:,1,:)=BmodesrgbH(:,:,1,:);
 Bmodesrgbhi(:,:,3,:)=BmodesrgbH(:,:,3,:);
 
+%% manual climc selection
+for j=1:noframes
+    rgblomean(j)=mean2(Bmodesrgblo(:,:,:,j));
+    rgbhimean(j)=mean2(Bmodesrgbhi(:,:,:,j));
+end
+
+figure
+subplot(1,2,1)
+histogram(rgblomean,20)
+title('Low pass')
+ylabel('Culmutative sum of occurence');
+xlabel('Normalized intensities I [1]')
+subplot(1,2,2)
+histogram(rgbhimean,20)
+title('High pass')
+ylabel('Culmutative sum of occurence');
+xlabel('Normalized intensities I [1]')
+sgtitle('H-scan intensity content')
+
+climc=[0.03,0.04];
+
 %% plot H-scan filtering results
-draw_pic(Bmodes, Bmodeslo, Bmodeshi, [], 0.05,~);
+draw_pic(Bmodes, Bmodeslo, Bmodeshi, [], 0.05, []);
 
 %% plot 2D colorcoded H-scan filtering results
-draw_pic(Bmodesrgb,Bmodesrgblo,Bmodesrgbhi,BmodesrgbH,0.05,~);
+draw_pic(Bmodesrgb,Bmodesrgblo,Bmodesrgbhi,BmodesrgbH, 0.05, climc);
 
 %% plot comparison between B-mode and H-scan
-draw_pic2(Bmodes,BmodesrgbH,0.1,~);
+draw_pic2(Bmodes,BmodesrgbH, 0.1, climc);
 
 %% analyze intensity in a pixel; over measurement time (frames)
 depth=floor(size(BmodesrgbH,1)/2);

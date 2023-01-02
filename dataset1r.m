@@ -36,6 +36,24 @@ RF = BF;
 
 RF = single(RF(:,:));
 
+%% signal profile
+%  analyzes mean intensity off all frames; over signal time (depth)
+
+for k=1:size(RF,1)
+    for j=1:size(RF,2)
+        Temp(j)=RF(k,j);
+    end
+    line(k)=mean(Temp);
+end
+
+line(isnan(line))=0;
+
+figure
+plot(line)
+title('Dataset 1 CG rest mean signal profile')
+xlabel('Depth (image line time)');
+ylabel('Mean intensity at various depths I [%]');
+
 %%
 Bmodes = single(sqrt(abs(hilbert(RF(:,:)))));
 shape = size(Bmodes);
@@ -77,11 +95,11 @@ Ehi=prod(1:2:(2*ordhi-1))*sqrt(pi/2);
 line=floor(size(RF,2)/2); % Image line = 64 out or 128
 
 [pxxlo,flo] = pwelch(GHlo, hamming(512));
-f_VECTlo = linspace(0,Fs/2,length(pxxlo));
+f_VECTlo = linspace(0,Fs/2,length(flo));
 p_NORMlo = 0.5*pxxlo./max(pxxlo);
 
 [pxxhi,fhi] = pwelch(GHhi,hamming(512));
-f_VECThi = linspace(0,Fs/2,length(pxxhi));
+f_VECThi = linspace(0,Fs/2,length(fhi));
 p_NORMhi = 0.5*pxxhi./max(pxxhi);
 
 imLineRF = double(squeeze(RF(:,line))); 
@@ -96,8 +114,8 @@ plot(f_VECThi, p_NORMhi, 'b', 'LineWidth', 1.5);
 sgtitle(['PSD for frame ',num2str(frame),' and line ',num2str(line)]);
 xlabel('Frequency f [MHz]'); ylabel('Amplitude A [1]');
 legend({'RF imageline','Low pass','High pass'});
-ylim([	min([p_NORMlo p_NORMhi p_NORM],[],'all')*1.25...
-		max([p_NORMlo p_NORMhi p_NORM],[],'all')*1.25]);
+ylim([	min([p_NORMlo p_NORMhi [p_NORM;ones(length(p_NORMlo)-length(p_NORM),1)]],[],'all')*1.15...
+		max([p_NORMlo p_NORMhi [p_NORM;zeros(length(p_NORMlo)-length(p_NORM),1)]],[],'all')*1.15]);
 
 %% ---------------------------
 % 2D H-scan conv and rgb encoding
@@ -188,14 +206,23 @@ legend({'Red channel','Blue channel'});
 xlabel('Depth (image line time)'); ylabel('Channel intensity I [%]');
 legend({'Red channel','Blue channel'});
 
+%% manual climc selection
+figure
+histogram(BmodesrgbHr,20)
+title('At rest intensity distribution')
+ylabel('Culmutative sum of occurence');
+xlabel('Normalized intensities I [1]')
+
+climcr=[];
+
 %% plot H-scan filtering results
-draw_pic(Bmodes,Bmodeslo,Bmodeshi,[],0.05,~);
+draw_pic(Bmodes,Bmodeslo,Bmodeshi, [], 0.05, []);
 
 %% plot 2D colorcoded H-scan filtering results
-draw_pic(Bmodesrgb,Bmodesrgblo,Bmodesrgbhi,BmodesrgbHr,0.05,~);
+draw_pic(Bmodesrgb,Bmodesrgblo,Bmodesrgbhi,BmodesrgbHr, 0.05, climcr);
 
 %% plot comparison between B-mode and H-scan
-draw_pic2(Bmodes,BmodesrgbHr,0.05,~);
+draw_pic2(Bmodes,BmodesrgbHr, 0.05, climcr);
 
 %% --------
 % AT WORK
@@ -226,6 +253,24 @@ BF = BF - repmat(mean(BF,1),[size(BF,1) 1]);
 RF = BF;
 
 RF= single(squeeze(RF(:,:,:)));
+
+%% signal profile
+%  analyzes mean intensity off all frames; over signal time (depth)
+
+for k=1:size(RF,1)
+    for j=1:size(RF,2)
+        Temp(j)=RF(k,j);
+    end
+    line(k)=mean(Temp);
+end
+
+line(isnan(line))=0;
+
+figure
+plot(line,'-r')
+title('Dataset 1 CG contraction mean signal profile')
+xlabel('Depth (image line time)');
+ylabel('Mean intensity at various depths I [%]');
 
 %%
 Bmodes = single(sqrt(abs(hilbert(squeeze(RF(:,:,:))))));
@@ -378,29 +423,27 @@ sgtitle(['Comparison of filtered channel mean intensities for\newlineframe ',num
 xlabel('Depth (image line time)'); ylabel('Channel intensity I [%]');
 legend({'Low pass','High pass'});
 
+%% manual climc selection
+figure
+histogram(BmodesrgbH,20)
+title('Contracted intensity distribution')
+ylabel('Culmutative sum of occurence');
+xlabel('Normalized intensities I [1]')
+
+climc=[];
+
 %% plot H-scan filtering results
-draw_pic(Bmodes,Bmodeslo, Bmodeshi,[],0.05,~);
+draw_pic(Bmodes,Bmodeslo, Bmodeshi, [], 0.05, []);
 
 %% plot 2D colorcoded H-scan filtering results
-draw_pic(Bmodesrgb,Bmodesrgblo,Bmodesrgbhi,BmodesrgbH,0.05,~);
+draw_pic(Bmodesrgb,Bmodesrgblo,Bmodesrgbhi,BmodesrgbH, 0.05, climc);
 
 %% plot comparison between B-mode and H-scan
-draw_pic2(Bmodes,BmodesrgbH,0.05,~);
+draw_pic2(Bmodes,BmodesrgbH, 0.05, climc);
 
 %% ---------------
 % 1c Comparing muscle at rest and at work H-scan images
 %-----------------
-figure
-subplot(1,2,1)
-histogram(BmodesrgbHr,20)
-title('At rest')
-ylabel('Culmutative sum of occurence');
-xlabel('Normalized intensities I [1]')
-subplot(1,2,2)
-histogram(BmodesrgbH,20)
-title('Contraction')
-ylabel('Culmutative sum of occurence');
-xlabel('Normalized intensities I [1]')
-sgtitle('H-scan intensity content')
-
-draw_pic2(BmodesrgbHr,BmodesrgbH,0.05);
+climtog=[min([climr clim],[],'all'),...
+		max([climr clim],[],'all')];
+draw_pic2(BmodesrgbHr,BmodesrgbH, 0.05, climctog);
