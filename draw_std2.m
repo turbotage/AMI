@@ -11,9 +11,12 @@ function draw_std2(mat1,mat2,perc)
     figure;
     subplot(1,2,1);
     imagesc(std_mat1);
+    title('Low pass')
     clim(perc1);
 
     subplot(1,2,2);
     imagesc(std_mat2);
+    title('High pass')
     clim(perc2);
+    sgtitle('Standard deviation mask of H-scan mean channel intensity')
 end

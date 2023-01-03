@@ -3,20 +3,51 @@
 %--------------------------------------------------------------------------
 % load dataset 2 stimulated contraction w ~1.6Hz i.e. 2-3 Hz on 1 muscle complex
 % should be conducted on several frames and is to be filtered using
-% svd and H-scan?
+% svd and H-scan.
+
 % ----------------------
 % Pre-processing data
 %-----------------------
-% 0913 - 2-3Hz stim
-rfmat = single(load('C:\Users\Rebecca Viklund\Desktop\AMI project\AMI\Dataset_2\181023_0913_rsf.mat').rfdat); %.rfmat_downsampled);
+% Specify dataset
+chosen_dataset='0913';
+if strcmp(chosen_dataset,'1555')
+    stimFreq = '~8Hz';
+
+elseif strcmp(chosen_dataset,'1311')
+    stimFreq= '~7.5Hz';
+
+elseif strcmp(chosen_dataset,'0913')
+    stimFreq= '2-3Hz';
+
+else
+    disp('That dataset does not exist')
+end
+
+%% read data
+dspath=strcat('C:\Users\Rebecca Viklund\Desktop\AMI project\AMI\Dataset_2\181023_',chosen_dataset);
+
+if strcmp(chosen_dataset,'1311')
+    dspath1=strcat(dspath,'_rs.mat');
+    rfmat = single(load(dspath1).rfmat_downsampled);
+else
+    dspath1=strcat(dspath,'_rsf.mat');
+    rfmat = single(load(dspath1).rfdat);
+end
+
 rfmat = rfmat(1:1000,:,:);
 tgc_vect = linspace(1,5,size(rfmat,1))';
 tgc_mat = repmat(tgc_vect,[1 size(rfmat,2)]);
 rfmat=rfmat.*tgc_mat;
 
+dspath2=strcat(dspath,'_ROI.mat');
+roimat = load(dspath2).ROI;
+
+Bmodes = sqrt(abs(hilbert(squeeze(rfmat(:,:,:)))));
+shape = size(Bmodes);
+
 %% signal profile
 %  analyzes mean intensity off all frames; over signal time (depth)
-
+clear X Y lineFrames
 for l=1:size(rfmat,3)
     for k=1:size(rfmat,1)
         for j=1:size(rfmat,2)
@@ -31,16 +62,11 @@ lineFrames(isnan(lineFrames))=0;
 [X,Y] = meshgrid(1:size(rfmat,3),1:size(rfmat,1));
 figure
 surf(X,Y,lineFrames,'lineStyle','none');
-title('Dataset 2 0913 2-3 Hz stim mean signal profile')
+title(['Dataset 2 ', chosen_dataset, ' ', stimFreq, ' stimulation mean signal profile'])
 xlabel('Frame t [0.5ms]');
 ylabel('Depth (image line time)');
 zlabel('Mean intensity at various depths I [%]');
 colorbar;
-%%
-roimat = load('C:\Users\Rebecca Viklund\Desktop\AMI project\AMI\Dataset_2\181023_1311_ROI.mat').ROI;
-
-Bmodes = sqrt(abs(hilbert(squeeze(rfmat(:,:,:)))));
-shape = size(Bmodes);
 
 %% ---------------------
 % SVD vs TVI - Viktors part
@@ -178,18 +204,21 @@ for j=1:noframes
     rgbhimean(j)=mean2(Bmodesrgbhi(:,:,:,j));
 end
 
-figure
-subplot(1,2,1)
-histogram(rgblomean,20)
-title('Low pass')
-ylabel('Culmutative sum of occurence');
-xlabel('Normalized intensities I [1]')
-subplot(1,2,2)
-histogram(rgbhimean,20)
-title('High pass')
-ylabel('Culmutative sum of occurence');
-xlabel('Normalized intensities I [1]')
-sgtitle('H-scan intensity content')
+t = tiledlayout(1,2,'TileSpacing','Compact');
+
+ax1=nexttile;
+histogram(rgblomean,20,'FaceColor','red');
+%ax1.XTick=[.0382 .03934 .03984 .040496 .041316];
+title(ax1,'Low pass');
+
+ax2=nexttile;
+histogram(rgbhimean,20,'FaceColor','blue');
+%ax2.XTick=[.0453 .045965 .046497 .047162 0.047827];
+title(ax2,'High pass');
+
+ylabel(t,'Culmutative sum of occurence');
+xlabel(t,'Normalized intensities I [1]');
+title(t,'H-scan mean channel intensity content for dataset 3')
 
 climc=[0.03,0.04];
 
@@ -326,21 +355,26 @@ lineFramesHhip=lineFramesHhi./lineFramesHlo;
 figure
 g = gcf;
 g.WindowState = 'maximized';
-subplot(1,2,1)
+
+t = tiledlayout(1,2,'TileSpacing','Compact');
+ax3=nexttile;
 surf(X,Y,lineFramesHlop,'lineStyle','none');
 title('Low pass channel')
 xlabel('Frame t [ms]');
 ylabel('Depth (image line time)');
-zlabel('Mean intensity at various depths I [%]');
 
-subplot(1,2,2)
+ax3=nexttile;
 surf(X,Y,lineFramesHhip,'lineStyle','none');
-colorbar;
 title('High pass channel')
 xlabel('Frame t [ms]');
 ylabel('Depth (image line time)');
-zlabel('Mean intensity at various depths I [%]');
-sgtitle('Comparison of channel mean intensities for all frames over depth');
+
+% 14x9 cm export setup
+ylabel(t,'Mean intensity at various depths I [%]','FontSize',8);
+
+title(t,['H-scan channel mean intensities for dataset 2\newline', chosen_dataset, ' ', stimFreq, ' stimulation signal']);
+cb = colorbar;
+cb.Layout.Tile = 'east';
 
 %% Mask the image
 % for j=1:noframes

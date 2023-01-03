@@ -4,8 +4,8 @@
 % Pre Filters (choose dataset)
 %-----------------------------
 % Dataset 2
-RF_MATlo=squeeze(Bmodesrgblo(:,:,3,:));
-RF_MAThi=squeeze(Bmodesrgbhi(:,:,1,:));
+RF_MATlo=squeeze(Bmodesrgblo(:,:,1,:));
+RF_MAThi=squeeze(Bmodesrgbhi(:,:,3,:));
 
 RF_MATlo_f = mybandpass(RF_MATlo,4,[3,30],500);
 RF_MAThi_f = mybandpass(RF_MAThi,4,[3,30],500);
@@ -21,10 +21,10 @@ fprintf('\nContrast for low pass: %.3f \n',stdratiolo)
 fprintf('Contrast for high pass: %.3f \n',stdratiohi)
 
 %% Dataset 3
-RF_MATlo=squeeze(Bmodesrgblo(:,:,3,:));
-RF_MAThi=squeeze(Bmodesrgbhi(:,:,1,:));
+RF_MATlo=squeeze(Bmodesrgblo(:,:,1,:));
+RF_MAThi=squeeze(Bmodesrgbhi(:,:,3,:));
 
-RF_MATlo_f = mybandpass(RF_MATlo,4,[5,30],1000);
+RF_MATlo_f = mybandpass(RF_MATlo,4,[4,30],1000);
 
 RF_MAThi_f = mybandpass(RF_MAThi,4,[5,30],1000);
 disp('Pre std mask filters of H-scan images')

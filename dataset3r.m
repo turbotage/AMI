@@ -4,6 +4,7 @@
 % load dataset 3 voluntary contraction w ~5-25Hz 10-15 muscle complexes
 % should be conducted on several frames and is to be filtered using both
 % svd and H-scan
+
 % ----------------------
 % Pre-processing data
 %-----------------------
@@ -152,18 +153,21 @@ for j=1:noframes
     rgbhimean(j)=mean2(Bmodesrgbhi(:,:,:,j));
 end
 
-figure
-subplot(1,2,1)
-histogram(rgblomean,20)
-title('Low pass')
-ylabel('Culmutative sum of occurence');
-xlabel('Normalized intensities I [1]')
-subplot(1,2,2)
-histogram(rgbhimean,20)
-title('High pass')
-ylabel('Culmutative sum of occurence');
-xlabel('Normalized intensities I [1]')
-sgtitle('H-scan intensity content')
+t = tiledlayout(1,2,'TileSpacing','Compact');
+
+ax1=nexttile;
+histogram(rgblomean,20,'FaceColor','red');
+ax1.XTick=[.0382 .03934 .03984 .040496 .041316];
+title(ax1,'Low pass');
+
+ax2=nexttile;
+histogram(rgbhimean,20,'FaceColor','blue');
+ax2.XTick=[.0453 .045965 .046497 .047162 0.047827];
+title(ax2,'High pass');
+
+ylabel(t,'Culmutative sum of occurence');
+xlabel(t,'Normalized intensities I [1]')
+title(t,'H-scan mean channel intensity content for dataset 3')
 
 climc=[0.03,0.04];
 
@@ -300,18 +304,21 @@ lineFramesHhip=lineFramesHhi./lineFramesHlo;
 figure
 g = gcf;
 g.WindowState = 'maximized';
-subplot(1,2,1)
+
+t = tiledlayout(1,2,'TileSpacing','Compact');
+ax3=nexttile;
 surf(X,Y,lineFramesHlop,'lineStyle','none');
 title('Low pass channel')
 xlabel('Frame t [ms]');
 ylabel('Depth (image line time)');
-zlabel('Mean intensity at various depths I [%]');
 
-subplot(1,2,2)
+ax3=nexttile;
 surf(X,Y,lineFramesHhip,'lineStyle','none');
-colorbar;
 title('High pass channel')
 xlabel('Frame t [ms]');
 ylabel('Depth (image line time)');
-zlabel('Mean intensity at various depths I [%]');
-sgtitle('Comparison of channel mean intensities for all frames over depth');
+
+ylabel(t,'Mean intensity at various depths I [%]','FontSize',8);
+title(t,'H-scan channel mean intensities for all frames over depth');
+cb = colorbar;
+cb.Layout.Tile = 'east';

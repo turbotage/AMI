@@ -5,7 +5,6 @@
 % should be conducted on one frame with only the H-scan for both full
 % activation and at rest.
 
-% See separate script dataset1r.m
 % --------
 % AT REST
 % --------
@@ -166,12 +165,12 @@ end
 lineHlo(isnan(lineHlo))=0;
 lineHhi(isnan(lineHhi))=0;
 
-lineHlo=lineHlo./lineHhi;
-lineHhi=lineHhi./lineHlo;
+lineHlop=lineHlo./lineHhi;
+lineHhip=lineHhi./lineHlo;
 
 figure(3); clf; hold on;
-plot(depths,lineHlo,'r');
-plot(depths,lineHhi,'b');
+plot(depths,lineHlop,'r');
+plot(depths,lineHhip,'b');
 xlabel('Depth (image line time)');
 sgtitle(['Comparison of filter channel intensities for frame\newline',num2str(frame),' over line ',num2str(line)]);
 legend({'Red channel','Blue channel'});
@@ -194,12 +193,12 @@ end
 lineFrameHlo(isnan(lineFrameHlo))=0;
 lineFrameHhi(isnan(lineFrameHhi))=0;
 
-lineFrameHlo=lineFrameHlo./lineFrameHhi;
-lineFrameHhi=lineFrameHhi./lineFrameHlo;
+lineFrameHlop=lineFrameHlo./lineFrameHhi;
+lineFrameHhip=lineFrameHhi./lineFrameHlo;
 
 figure(3); clf; hold on;
-plot(depths,lineFrameHhi,'r');
-plot(depths,lineFrameHlo,'b');
+plot(depths,lineFrameHhip,'r');
+plot(depths,lineFrameHlop,'b');
 xlabel('Depth (image line time)');
 sgtitle(['Comparison of channel mean intensities for\newlineframe ',num2str(frame),' over depth']);
 legend({'Red channel','Blue channel'});
@@ -384,12 +383,12 @@ end
 lineHlo(isnan(lineHlo))=0;
 lineHhi(isnan(lineHhi))=0;
 
-lineHlo=lineHlo./lineHhi;
-lineHhi=lineHhi./lineHlo;
+lineHlop=lineHlo./lineHhi;
+lineHhip=lineHhi./lineHlo;
 
 figure(3); clf; hold on;
-plot(depths,lineHlo,'r');
-plot(depths,lineHhi,'b');
+plot(depths,lineHlop,'r');
+plot(depths,lineHhip,'b');
 xlabel('Depth (image line time)');
 sgtitle(['Comparison of filter channel intensities for frame\newline',num2str(frame),' over line ',num2str(line)]);
 legend({'Red channel','Blue channel'});
@@ -412,12 +411,12 @@ end
 lineFrameHlo(isnan(lineFrameHlo))=0;
 lineFrameHhi(isnan(lineFrameHhi))=0;
 
-lineFrameHlo=lineFrameHlo./lineFrameHhi;
-lineFrameHhi=lineFrameHhi./lineFrameHlo;
+lineFrameHlop=lineFrameHlo./lineFrameHhi;
+lineFrameHhip=lineFrameHhi./lineFrameHlo;
 
 figure(3); clf; hold on;
-plot(depths,lineFrameHlo,'r');
-plot(depths,lineFrameHhi,'b');
+plot(depths,lineFrameHlop,'r');
+plot(depths,lineFrameHhip,'b');
 xlabel('Depth (image line time)');
 sgtitle(['Comparison of filtered channel mean intensities for\newlineframe ',num2str(frame),' over depth']);
 xlabel('Depth (image line time)'); ylabel('Channel intensity I [%]');
