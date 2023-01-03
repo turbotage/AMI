@@ -68,19 +68,19 @@ ylabel('Depth (image line time)');
 zlabel('Mean intensity at various depths I [%]');
 colorbar;
 
-%% ---------------------
+%% ------------------------
 % SVD vs TVI - Viktors part
-%-----------------------
-% --------------------
+% -------------------------
+% -----------------------
 % Pre-processing TVI data 
-%---------------------
+%------------------------
 % fn_STR = '181023_1311tvi_rs.mat';
 % h = matfile(fn_STR);
 % tvif_d = single(h.tvi_downsampled(:,:,1:250));
 % tvif_d = sqrt(abs(hilbert(squeeze(tvif_d(:,:,:)))));
-%-------------------------
+%------------------------
 % Filtering and comparing
-%-------------------------
+%------------------------
 % Prefiltering
 % median3 and butter order 4 on both TVI and SVD, keeping the freqs in
 % range 5-25 Hz
@@ -100,7 +100,7 @@ colorbar;
 
 % ---------------------
 % H-scan 3
-%-----------------------
+%----------------------
 % checking filter settings in 1D by taking a line/col of the img for
 % freq analysis
 Fs = 40; % MHz Samplingfreq of the US not the signal

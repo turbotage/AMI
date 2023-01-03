@@ -16,7 +16,7 @@ RF_MAT=RF_MAT.*TCG_MAT;
 
 %% signal profile
 %  analyzes mean intensity off all frames; over signal time (depth)
-
+clear X Y lineFrames
 for l=1:size(RF_MAT,3)
     for k=1:size(RF_MAT,1)
         for j=1:size(RF_MAT,2)
