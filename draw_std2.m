@@ -8,7 +8,7 @@ function draw_std2(mat1,mat2,perc)
     perc1 = prctile(std_mat1,perc,[1,2]);
     perc2 = prctile(std_mat2,perc,[1,2]);
 
-    t=tiledlayout(1,2),'TileSpacing','Compact');
+    t=tiledlayout(1,2,'TileSpacing','Compact');
 	nexttile;
     imagesc(std_mat1);
     title('Low pass')

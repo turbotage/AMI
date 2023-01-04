@@ -68,6 +68,7 @@ Hhi = hermiteH(ordhi, t./b2); % order 32
 GHhi = exp(-(t./(b2)).^2).*Hhi;
 GHhi = GHhi./sum(GHhi(:));
 
+%%
 figure(1);
 subplot(2,1,1)
 plot(t,GHlo,'r', 'LineWidth', 1.5);
@@ -96,6 +97,7 @@ imLineRF = double(squeeze(RF_MAT(:,line,frame)));
 f_VECT = linspace(0,Fs/2,length(f));
 p_NORM = sqrt(pxx)./max(sqrt(pxx));
 
+%%
 figure(2); clf; hold on;
 plot(f_VECT, p_NORM,'-','color',[0 .5 0],'LineWidth', 1.5);
 plot(f_VECTlo, p_NORMlo, 'r', 'LineWidth', 1.5);
@@ -106,15 +108,14 @@ legend({'RF imageline','Low pass','High pass'});
 ylim([	min([p_NORMlo p_NORMhi [p_NORM;ones(length(p_NORMlo)-length(p_NORM),1)]],[],'all')*1.15...
 		max([p_NORMlo p_NORMhi [p_NORM;zeros(length(p_NORMlo)-length(p_NORM),1)]],[],'all')*1.15]);
 
-% computing analytic energies for conv
-Elo=prod(1:2:(2*ordlo-1))*sqrt(pi/2);
-Ehi=prod(1:2:(2*ordhi-1))*sqrt(pi/2);
-
 %% ---------------------------
 % 2D H-scan conv and rgb encoding
 %-----------------------------
 clear RF_MATlo RF_MAThi
 clear Bmodeslo Bmodeshi
+% computing analytic energies for conv
+Elo=prod(1:2:(2*ordlo-1))*sqrt(pi/2);
+Ehi=prod(1:2:(2*ordhi-1))*sqrt(pi/2);
 noframes=size(RF_MAT,3);
 frames=1:floor(noframes);
 
@@ -140,9 +141,12 @@ BmodesrgbH(:,:,1,:) = myrgbencoder(Bmodeslo);
 BmodesrgbH(:,:,3,:) = myrgbencoder(Bmodeshi);
 Bmodesrgb(:,:,2,:) = myrgbencoder(Bmodes);
 
-BmodesrgbH(:,:,1,:) = mymedfilt(BmodesrgbH(:,:,1,:), [15,3]);
-BmodesrgbH(:,:,3,:) = mymedfilt(BmodesrgbH(:,:,3,:), [15,3]);
-Bmodesrgb(:,:,2,:) = mymedfilt(Bmodesrgb(:,:,2,:), [15,3]);
+BmodesrgbH(:,:,1,:) = mymedfilt(BmodesrgbH(:,:,1,:), [10,3]);
+disp('1')
+BmodesrgbH(:,:,3,:) = mymedfilt(BmodesrgbH(:,:,3,:), [10,3]);
+disp('2')
+Bmodesrgb(:,:,2,:) = mymedfilt(Bmodesrgb(:,:,2,:), [10,3]);
+disp('3')
 
 Bmodesrgblo(:,:,1,:)=BmodesrgbH(:,:,1,:);
 Bmodesrgbhi(:,:,3,:)=BmodesrgbH(:,:,3,:);
@@ -178,7 +182,7 @@ draw_pic(Bmodes, Bmodeslo, Bmodeshi, [], 0.05, []);
 draw_pic(Bmodesrgb,Bmodesrgblo,Bmodesrgbhi,BmodesrgbH, 0.05, climc);
 
 %% plot comparison between B-mode and H-scan
-draw_pic2(Bmodes,BmodesrgbH, 0.1, climc);
+draw_pic2(Bmodes(:,:,250),BmodesrgbH(:,:,:,250), 0.1, climc);
 
 %% analyze intensity in a pixel; over measurement time (frames)
 depth=floor(size(BmodesrgbH,1)/2);
@@ -282,6 +286,10 @@ legend({'Low pass','High pass','Red trend','Blue trend'});
 
 %% analyze mean intensity off all frames; over signal time (depth)
 clear Templo Temphi lineFramesHlo lineFramesHhi
+nodepths=size(BmodesrgbH,1);
+depths=1:nodepths;
+nolines=size(BmodesrgbH,2);
+lines=1:nolines;
 
 for m=1:noframes
     for k=1:nodepths
