@@ -8,7 +8,7 @@
 % --------
 % AT REST
 % --------
-load('C:\Users\Rebecca Viklund\Desktop\AMI project\AMI\Dataset_1\CG_rest_2_omg2.mat');
+load('C:\Users\revi0014\Desktop\AMI\Dataset_1\CG_rest_2_omg2.mat');
 frame=floor(30/2); % Chose a frame, for dataset 1 one is sufficient for the report.
 % ----------------------
 % Pre-processing of data
@@ -70,7 +70,7 @@ Hlo = hermiteH(ordlo, t./b1);
 GHlo = exp(-(t./(b1)).^2).*Hlo;
 
 % GH high pass
-b2 = 0.135;
+b2 = 0.125;
 ordhi = 32;
 Hhi = hermiteH(ordhi, t./b2); % order 32
 GHhi = exp(-(t./(b2)).^2).*Hhi;
@@ -226,7 +226,7 @@ draw_pic2(Bmodes,BmodesrgbHr, 0.05, climcr);
 %% --------
 % AT WORK
 % --------
-load('C:\Users\Rebecca Viklund\Desktop\AMI project\AMI\Dataset_1\CG_contraction_1_omg2.mat');
+load('C:\Users\revi0014\Desktop\AMI\Dataset_1\CG_contraction_1_omg2.mat');
 frame=floor(30/2); % Chose a frame, for dataset 1 one is sufficient for the report.
 % ----------------------
 % Pre-processing of data

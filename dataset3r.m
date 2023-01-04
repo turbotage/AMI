@@ -55,14 +55,14 @@ T_duration = 10; % microseconds (the time intervall for the GH pulses)
 t = linspace(-T_duration,T_duration,2*T_duration*Fs);
 
 % GH low pass
-b1 = 0.19;
+b1 = 0.18;
 ordlo = 16;
 Hlo = hermiteH(ordlo, t./b1);
 GHlo = exp(-(t./(b1)).^2).*Hlo;
 GHlo = GHlo./sum(GHlo(:));
 
 % GH high pass
-b2 = 0.15;
+b2 = 0.13;
 ordhi = 32;
 Hhi = hermiteH(ordhi, t./b2); % order 32
 GHhi = exp(-(t./(b2)).^2).*Hhi;

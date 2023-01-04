@@ -9,12 +9,13 @@
 % Pre-processing data
 %-----------------------
 % Specify dataset
-chosen_dataset='0913';
+chosen_dataset='1555';
 if strcmp(chosen_dataset,'1555')
     stimFreq = '~8Hz';
 
 elseif strcmp(chosen_dataset,'1311')
     stimFreq= '~7.5Hz';
+
 
 elseif strcmp(chosen_dataset,'0913')
     stimFreq= '2-3Hz';
@@ -24,14 +25,18 @@ else
 end
 
 %% read data
-dspath=strcat('C:\Users\Rebecca Viklund\Desktop\AMI project\AMI\Dataset_2\181023_',chosen_dataset);
+dspath=strcat('C:\Users\revi0014\Desktop\AMI\Dataset_2\181023_',chosen_dataset);
 
 if strcmp(chosen_dataset,'1311')
     dspath1=strcat(dspath,'_rs.mat');
     rfmat = single(load(dspath1).rfmat_downsampled);
+	b1=.16;
+	b2=.135;
 else
     dspath1=strcat(dspath,'_rsf.mat');
     rfmat = single(load(dspath1).rfdat);
+	b1=.145;
+	b2=.125;
 end
 
 rfmat = rfmat(1:1000,:,:);
@@ -108,14 +113,12 @@ T_duration = 10; % microseconds (the time intervall for the GH pulses)
 t = linspace(-T_duration,T_duration,2*T_duration*Fs);
 
 % GH low pass
-b1 = 0.340;
 ordlo = 2;
 Hlo = hermiteH(ordlo, t./b1);
 GHlo = exp(-(t./(b1)).^2).*Hlo;
 
 % GH high pass
-b2 = 0.135;
-ordhi = 32;
+ordhi = 16;
 Hhi = hermiteH(ordhi, t./b2); % order 32
 GHhi = exp(-(t./(b2)).^2).*Hhi;
 
@@ -191,9 +194,10 @@ BmodesrgbH(:,:,1,:) = myrgbencoder(Bmodeslo);
 BmodesrgbH(:,:,3,:) = myrgbencoder(Bmodeshi);
 Bmodesrgb(:,:,2,:) = myrgbencoder(Bmodes);
 
-BmodesrgbH(:,:,1,:) = mymedfilt(BmodesrgbH(:,:,1,:), [15,3]);
-BmodesrgbH(:,:,3,:) = mymedfilt(BmodesrgbH(:,:,3,:), [15,3]);
-Bmodesrgb(:,:,2,:) = mymedfilt(Bmodesrgb(:,:,2,:), [15,3]);
+%%
+BmodesrgbH(:,:,1,:) = mymedfilt(BmodesrgbH(:,:,1,:), [10,3]);
+BmodesrgbH(:,:,3,:) = mymedfilt(BmodesrgbH(:,:,3,:), [10,3]);
+Bmodesrgb(:,:,2,:) = mymedfilt(Bmodesrgb(:,:,2,:), [10,3]);
 
 Bmodesrgblo(:,:,1,:)=BmodesrgbH(:,:,1,:);
 Bmodesrgbhi(:,:,3,:)=BmodesrgbH(:,:,3,:);
