@@ -18,6 +18,7 @@ else
 	RF_MAThi_f = mybandpass(RF_MAThi,4,[.5,10],500);
 end
 
+chosen_dataset=strcat('Dataset 2\_',chosen_dataset);
 
 disp('Pre std mask filters of H-scan images')
 
@@ -37,6 +38,8 @@ fprintf('\nContrast for low pass with bp: %.3f \n',stdratiolo_f)
 fprintf('Contrast for high pass with bp: %.3f \n',stdratiohi_f)
 
 %% Dataset 3
+chosen_dataset='Dataset 3 RF\_MAT';
+
 RF_MATlo=squeeze(Bmodesrgblo(:,:,1,:));
 RF_MAThi=squeeze(Bmodesrgbhi(:,:,3,:));
 
@@ -50,8 +53,9 @@ disp('Pre std mask filters of H-scan images')
 %------------------------------
 % wo bp
 perc=[1,99];
-draw_std2(RF_MATlo,RF_MAThi,perc);
+draw_std2(chosen_dataset,RF_MATlo,RF_MAThi,perc,roimat);
 
 %% with bp
+chosen_dataset=strcat(chosen_dataset,' with bp filtering');
 perc=[1,99];
-draw_std2(RF_MATlo_f,RF_MAThi_f,perc);
+draw_std2(chosen_dataset,RF_MATlo_f,RF_MAThi_f,perc,roimat);

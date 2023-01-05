@@ -32,6 +32,7 @@ if strcmp(chosen_dataset,'1311')
     rfmat = single(load(dspath1).rfmat_downsampled);
 	b1=.16;
 	b2=.135;
+
 else
     dspath1=strcat(dspath,'_rsf.mat');
     rfmat = single(load(dspath1).rfdat);
@@ -67,7 +68,7 @@ lineFrames(isnan(lineFrames))=0;
 [X,Y] = meshgrid(1:size(rfmat,3),1:size(rfmat,1));
 figure
 surf(X,Y,lineFrames,'lineStyle','none');
-title(['Dataset 2 ', chosen_dataset, ' ', stimFreq, ' stimulation mean signal profile'])
+title(['Dataset 2 ', chosen_dataset, ' ', stimFreq, '\newlinestimulation mean signal profile'])
 xlabel('Frame t [0.5ms]');
 ylabel('Depth (image line time)');
 zlabel('Mean intensity at various depths I [%]');
