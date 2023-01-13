@@ -1,14 +1,33 @@
-% How to read this large file (in pieces)
-fn_STR = '181023_1311.mat';
+new_viktor.m
 
-h = matfile(fn_STR);
-% Get the "sound data" or "Radiofrequency data". 
-% The columns, i.e. second dimension is the channels (x-direction) and y-diretion is the sound signa which is also depth dimension y
-RF_MAT = h.rf_data_set(:,:,1:4000); % Read first 4000 frames. NB: Frames are samples at 2000Hz, i.e. 0.5ms between each frame. so 2000 frames is 1 second sequence
+Runs a parametric sweep for singular value intervals and produces an std map for tvi and svd
+for a chosen singular value interval.
 
-% How to reconstruct an image from the RF_MAT data
-frame_select = 10;
-B_MAT = sqrt(abs(hilbert(squeeze(RF_MAT(:,:,frame_select))))); % The sqrt is just for "compression" or the intensity data
+Choose dataset via the strings in the load sections, 
+choose bandpass appropriatly for the specific dataset.
 
 
-% You can read the corresponding TVI data using the same approach as above.
+tvi_contrasts.m
+
+Calculates the contrast for the TVI method for a specific dataset using roi_metric
+
+svd_contrasts.m
+
+Calculates the contrast for a specific dataset with the SVD method using roi_metric,
+specific singular value interval too.
+
+bp_contrasts.m
+
+Same as svd_contrasts.m and tvi_contrasts.m but for just a bandpass
+
+
+svd_data2_plots.m
+
+Plots the contrast surface plot for a parametric sweep. 
+Ratios matrix should be stored from parametric sweep
+
+resample_data.m
+
+Takes in ultrasound datasets, resamples them to 1/4 of the original sampling rate and stores
+them as single. Also, only the upper 1000 voxels are stored. This often decreases the storage
+by a factor 10-16.
