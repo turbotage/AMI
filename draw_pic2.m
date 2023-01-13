@@ -1,6 +1,7 @@
 function draw_pic2(mat1, mat2, delay, climc)
-% plots 2 images with specified delay and option of including
-% figure number
+% Rebeccas adaption of draw_pic2 for H-scan. Plots 2 images, either one gray
+% side-by-side with one rgb or two rgbs side by side. The function requires
+% specified delay and has an option of including color limits (has default.)
 
 if nargin < 4
     climc = [0 1];
@@ -22,7 +23,7 @@ W2 = mat2(:,:,:,1);
 
 % Maximize window.
 g = gcf;
-% 		g.WindowState = 'maximized';
+% g.WindowState = 'maximized';
 drawnow;
 
 subplot(1,2,1);

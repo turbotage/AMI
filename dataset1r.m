@@ -1,15 +1,19 @@
-% AMI Project 2022 - Rebecca
+% AMI Project 2022 - Rebeccas contributions
 % Dataset 1 - H-scan
 %--------------------------------------------------------------------------
-% load dataset 1 only image contraction at full activation vs full rest
+% loads dataset 1 only image contraction at full activation vs full rest
 % should be conducted on one frame with only the H-scan for both full
 % activation and at rest.
 
 % --------
 % AT REST
 % --------
+% Change path to the files of dataset 1 either CG_omg1 or _omg2 or MN
+% followed _rest.
+
 load('C:\Users\Rebecca Viklund\Desktop\AMI project\AMI\Dataset_1\CG_rest_2_omg2.mat');
 frame=floor(30/2); % Chose a frame, for dataset 1 one is sufficient for the report.
+
 % ----------------------
 % Pre-processing of data
 % ----------------------
@@ -35,6 +39,8 @@ RF = BF;
 
 RF = single(RF(:,:));
 
+Bmodes = single(sqrt(abs(hilbert(RF(:,:)))));
+shape = size(Bmodes);
 %% signal profile
 %  analyzes mean intensity off all frames; over signal time (depth)
 
@@ -53,14 +59,11 @@ title('Dataset 1 CG rest mean signal profile')
 xlabel('Depth (image line time)');
 ylabel('Mean intensity at various depths I [%]');
 
-%%
-Bmodes = single(sqrt(abs(hilbert(RF(:,:)))));
-shape = size(Bmodes);
-% ----------------------
-% H-scan 1a
+%% ----------------------
+% H-scan dataset 1a
 %-----------------------
-Fs = 35; % MHz Samplingfreq of the US not the signal
-T_duration = 10; % microseconds (the time intervall for the GH pulses)
+Fs = 35; % MHz sampling freq of the US (not the signal)
+T_duration = 10; % µs (the time intervall for the GH pulses)
 t = linspace(-T_duration,T_duration,2*T_duration*Fs);
 
 % GH low pass
@@ -90,8 +93,9 @@ sgtitle('Gaussian weighted Hermite polynomials')
 Elo=prod(1:2:(2*ordlo-1))*sqrt(pi/2);
 Ehi=prod(1:2:(2*ordhi-1))*sqrt(pi/2);
 
-%% Plot one spectrum of one imageline for comparison with the GH spectra
-line=floor(size(RF,2)/2); % Image line = 64 out or 128
+%% Generating a psd of one imageline for comparison with the GH spectra for 
+% H-scan setup
+line=floor(size(RF,2)/2);
 
 [pxxlo,flo] = pwelch(GHlo, hamming(512));
 f_VECTlo = linspace(0,Fs/2,length(flo));
@@ -105,6 +109,8 @@ imLineRF = double(squeeze(RF(:,line)));
 [pxx,f] = pwelch(imLineRF);
 f_VECT = linspace(0,Fs/2,length(f));
 p_NORM = sqrt(pxx)./max(sqrt(pxx));
+
+%% Plotting H-scan settings
 
 figure(2); clf; hold on;
 plot(f_VECT, p_NORM,'-','color',[0 .5 0],'LineWidth', 1.5);
@@ -132,7 +138,8 @@ end
 Bmodeslo=sqrt(abs(hilbert(RFlo)));
 Bmodeshi=sqrt(abs(hilbert(RFhi)));
 
-% rb colorcoding
+%% rgb encoding and filtering
+
 BmodesrgbHr = zeros(shape(1),shape(2),3);
 Bmodesrgb = zeros(shape(1),shape(2),3);
 Bmodesrgblo = zeros(shape(1),shape(2),3);
@@ -153,7 +160,30 @@ Bmodesrgb(:,:,2) = medfilt2(Bmodesrgb(:,:,2),[3,22]);
 Bmodesrgblo(:,:,1) = BmodesrgbHr(:,:,1);
 Bmodesrgbhi(:,:,3) = BmodesrgbHr(:,:,3);
 
-%% analyze intensity in a line; over signal time (depth)
+%% manual climc selection for H-scan apperance
+
+figure
+histogram(BmodesrgbHr,20)
+title('At rest intensity distribution')
+ylabel('Culmutative sum of occurence');
+xlabel('Normalized intensities I [1]')
+
+climcr=[]; % Manually selected based on the plots above
+
+%% plot B-mode vs both H-scan channels respectively
+draw_pic(Bmodes,Bmodeslo,Bmodeshi, [], 0.05, []);
+
+%% plot color channels of H-scan (diagnostic for code)
+draw_pic(Bmodesrgb,Bmodesrgblo,Bmodesrgbhi,BmodesrgbHr, 0.05, climcr);
+
+%% plot comparison between B-mode and H-scan
+draw_pic2(Bmodes,BmodesrgbHr, 0.05, climcr);
+
+%% ----------------------------
+% Additional analytical imagery
+%------------------------------
+% Analyze intensity in a line; over signal time (depth)
+
 nodepths=size(BmodesrgbHr,1);
 depths=1:nodepths;
 
@@ -178,6 +208,7 @@ xlabel('Depth (image line time)'); ylabel('Channel intensity I [%]');
 legend({'High pass','Low pass'});
 
 %% analyze intensity in one frame; over signal time (depth)
+
 nolines=size(BmodesrgbHr,2);
 lines=1:nolines;
 
@@ -205,27 +236,12 @@ legend({'Red channel','Blue channel'});
 xlabel('Depth (image line time)'); ylabel('Channel intensity I [%]');
 legend({'Red channel','Blue channel'});
 
-%% manual climc selection
-figure
-histogram(BmodesrgbHr,20)
-title('At rest intensity distribution')
-ylabel('Culmutative sum of occurence');
-xlabel('Normalized intensities I [1]')
+%% --------------------
+% AT WORK (CONTRACTION)
+% ---------------------
+% Change path to the files of dataset 1 either CG_omg1 or _omg2 or MN
+% followed by _contraction.
 
-climcr=[];
-
-%% plot H-scan filtering results
-draw_pic(Bmodes,Bmodeslo,Bmodeshi, [], 0.05, []);
-
-%% plot 2D colorcoded H-scan filtering results
-draw_pic(Bmodesrgb,Bmodesrgblo,Bmodesrgbhi,BmodesrgbHr, 0.05, climcr);
-
-%% plot comparison between B-mode and H-scan
-draw_pic2(Bmodes,BmodesrgbHr, 0.05, climcr);
-
-%% --------
-% AT WORK
-% --------
 load('C:\Users\Rebecca Viklund\Desktop\AMI project\AMI\Dataset_1\CG_contraction_1_omg2.mat');
 frame=floor(30/2); % Chose a frame, for dataset 1 one is sufficient for the report.
 % ----------------------
@@ -253,6 +269,7 @@ RF = BF;
 
 RF= single(squeeze(RF(:,:,:)));
 
+Bmodes = single(sqrt(abs(hilbert(squeeze(RF(:,:,:))))));
 %% signal profile
 %  analyzes mean intensity off all frames; over signal time (depth)
 
@@ -271,14 +288,11 @@ title('Dataset 1 CG contraction mean signal profile')
 xlabel('Depth (image line time)');
 ylabel('Mean intensity at various depths I [%]');
 
-%%
-Bmodes = single(sqrt(abs(hilbert(squeeze(RF(:,:,:))))));
-
-% ----------------------
-% H-scan 1b
+%% ----------------------
+% H-scan dataset 1b
 %-----------------------
-Fs = 35; % MHz Samplingfreq of the US not the signal
-T_duration = 10; % microseconds (the time intervall for the GH pulses)
+Fs = 35; % MHz sampling freq of the US (not the signal)
+T_duration = 10; % µs (the time intervall for the GH pulses)
 t = linspace(-T_duration,T_duration,2*T_duration*Fs);
 
 % GH low pass
@@ -292,6 +306,8 @@ b2 = 0.135;
 ordhi = 32;
 Hhi = hermiteH(ordhi, t./b2); % order 32
 GHhi = exp(-(t./(b2)).^2).*Hhi;
+
+%% Plotting chosen polynomials
 
 figure(1);
 subplot(2,1,1)
@@ -308,8 +324,9 @@ sgtitle('Gaussian weighted Hermite polynomials')
 Elo=prod(1:2:(2*ordlo-1))*sqrt(pi/2);
 Ehi=prod(1:2:(2*ordhi-1))*sqrt(pi/2);
 
-%% Plot one spectrum of one imageline for comparison with the GH spectra
-line=floor(size(RF,2)/2); % Image line = 64 out or 128
+%% Generating a psd of one imageline for comparison with the GH spectra for 
+% H-scan setup
+line=floor(size(RF,2)/2);
 
 [pxxlo,flo] = pwelch(GHlo, hamming(512));
 f_VECTlo = linspace(0,Fs/2,length(pxxlo));
@@ -323,6 +340,8 @@ imLineRF = double(squeeze(RF(:,line)));
 [pxx,f] = pwelch(imLineRF);
 f_VECT = linspace(0,Fs/2,length(f));
 p_NORM = sqrt(pxx)./max(sqrt(pxx));
+
+%% Plotting H-scan settings
 
 figure(2); clf; hold on;
 plot(f_VECT, p_NORM,'-','color',[0 .5 0],'LineWidth', 1.5);
@@ -350,7 +369,8 @@ end
 Bmodeslo=sqrt(abs(hilbert(RFlo)));
 Bmodeshi=sqrt(abs(hilbert(RFhi)));
 
-% rb colorcoding
+%% rgb encoding and filtering
+
 BmodesrgbH = zeros(shape(1),shape(2),3);
 Bmodesrgb = zeros(shape(1),shape(2),3);
 Bmodesrgblo = zeros(shape(1),shape(2),3);
@@ -371,7 +391,31 @@ Bmodesrgb(:,:,2) = medfilt2(Bmodesrgb(:,:,2),[3,22]);
 
 Bmodesrgblo(:,:,1) = BmodesrgbH(:,:,1);
 Bmodesrgbhi(:,:,3) = BmodesrgbH(:,:,3);
-%% analyze intensity in a line; over signal time (depth)
+
+%% manual climc selection for H-scan apperance
+
+figure
+histogram(BmodesrgbH,20)
+title('Contracted intensity distribution')
+ylabel('Culmutative sum of occurence');
+xlabel('Normalized intensities I [1]')
+
+climc=[]; % Manually selected based on the plots above
+
+%% plot B-mode vs both H-scan channels respectively
+draw_pic(Bmodes,Bmodeslo, Bmodeshi, [], 0.05, []);
+
+%% plot color channels of H-scan (diagnostic for code)
+draw_pic(Bmodesrgb,Bmodesrgblo,Bmodesrgbhi,BmodesrgbH, 0.05, climc);
+
+%% plot comparison between B-mode and H-scan
+draw_pic2(Bmodes,BmodesrgbH, 0.05, climc);
+
+%% ----------------------------
+% Additional analytical imagery
+%------------------------------
+% Analyze intensity in a line; over signal time (depth)
+
 nodepths=size(BmodesrgbH,1);
 depths=1:nodepths;
 
@@ -422,27 +466,12 @@ sgtitle(['Comparison of filtered channel mean intensities for\newlineframe ',num
 xlabel('Depth (image line time)'); ylabel('Channel intensity I [%]');
 legend({'Low pass','High pass'});
 
-%% manual climc selection
-figure
-histogram(BmodesrgbH,20)
-title('Contracted intensity distribution')
-ylabel('Culmutative sum of occurence');
-xlabel('Normalized intensities I [1]')
-
-climc=[];
-
-%% plot H-scan filtering results
-draw_pic(Bmodes,Bmodeslo, Bmodeshi, [], 0.05, []);
-
-%% plot 2D colorcoded H-scan filtering results
-draw_pic(Bmodesrgb,Bmodesrgblo,Bmodesrgbhi,BmodesrgbH, 0.05, climc);
-
-%% plot comparison between B-mode and H-scan
-draw_pic2(Bmodes,BmodesrgbH, 0.05, climc);
-
 %% ---------------
-% 1c Comparing muscle at rest and at work H-scan images
+% COMPARING AT REST VS AT WORK 
 %-----------------
+% Selecting a common color limit vector
 climtog=[min([climr clim],[],'all'),...
 		max([climr clim],[],'all')];
+
+% Plotting their H-scan images side by side
 draw_pic2(BmodesrgbHr,BmodesrgbH, 0.05, climctog);

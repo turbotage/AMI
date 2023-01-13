@@ -1,4 +1,7 @@
 function encoded_channel = myrgbencoder(data)
+% Rebeccas script which encodes each frame of the data's intensities to a 
+% value between 0 and 1 saving it and returning it as one rgb channel matrix. 
+% It can handle 2D matrices both with and without a temporal dimension.
 
     if size(data,3)
         encoded_channel = single(zeros([size(data,1) size(data,2) 1 size(data,3)]));

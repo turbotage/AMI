@@ -1,15 +1,17 @@
-% AMI Project 2022 - Rebecca
+% AMI Project 2022 - Rebecca and Hanna (colab)
 % Dataset 2 - H-scan
 %--------------------------------------------------------------------------
-% load dataset 2 stimulated contraction w ~1.6Hz i.e. 2-3 Hz on 1 muscle complex
-% should be conducted on several frames and is to be filtered using
-% svd and H-scan.
+% loads dataset 2 consisting of stimulated contraction on 1 muscle complex 
+% with 3different stimulation frequencies conducted over several frames. 
+% It is to be filtered using svd and H-scan their results compared to the 
+% provided ROI:s. This file contain the H-scan application.
 
 % ----------------------
 % Pre-processing data
 %-----------------------
 % Specify dataset
-chosen_dataset='0913';
+chosen_dataset='0913'; % Enter filename
+
 if strcmp(chosen_dataset,'1555')
     stimFreq = '~8Hz';
 
@@ -24,8 +26,13 @@ else
     disp('That dataset does not exist')
 end
 
-%% read data
+%% Read data
+% Edit the path below to match the location of the dataset
 dspath=strcat('C:\Users\Rebecca Viklund\Desktop\AMI project\AMI\Dataset_2\181023_',chosen_dataset);
+
+% These conditional statements concatenate the suffixes of our downsampled
+% datasets and load the associated H-scan constant values fo the chosen
+% dataset.
 
 if strcmp(chosen_dataset,'1311')
     dspath1=strcat(dspath,'_rs.mat');
@@ -51,9 +58,12 @@ roimat = load(dspath2).ROI;
 Bmodes = sqrt(abs(hilbert(squeeze(rfmat(:,:,:)))));
 shape = size(Bmodes);
 
-%% signal profile
-%  analyzes mean intensity off all frames; over signal time (depth)
+%% -----------------------
+% Signal profile dataset 2
+%-------------------------
+% Analyzes mean intensity off all frames; over signal time (depth)
 clear X Y lineFrames
+
 for l=1:size(rfmat,3)
     for k=1:size(rfmat,1)
         for j=1:size(rfmat,2)
@@ -74,43 +84,13 @@ ylabel('Depth (image line time)');
 zlabel('Mean intensity at various depths I [%]');
 colorbar;
 
-%% ------------------------
-% SVD vs TVI - Viktors part
-% -------------------------
-% -----------------------
-% Pre-processing TVI data 
-%------------------------
-% fn_STR = '181023_1311tvi_rs.mat';
-% h = matfile(fn_STR);
-% tvif_d = single(h.tvi_downsampled(:,:,1:250));
-% tvif_d = sqrt(abs(hilbert(squeeze(tvif_d(:,:,:)))));
-%------------------------
-% Filtering and comparing
-%------------------------
-% Prefiltering
-% median3 and butter order 4 on both TVI and SVD, keeping the freqs in
-% range 5-25 Hz
-
-% tripple median filtering
-% Bmodes_fin=medfilt3(Bmodes_new);
-% tvi_fin=medfilt3(tvif);
-
-% spatial filtering
-% C = conv2(A, B8);
-
-% freq filtering
-% idea: bandpass on every pixel intensity over activation time 5-15(30) Hz
-% for dataset 2 but around 1.5 Hz for dataset 3
-% [b,a] = butter(4,[5 25]./(Fsamp/2),'bandpass');
-% y_filt = filtfilt(b,a,y);
-
-% ---------------------
-% H-scan 3
+%% ---------------------
+% H-scan dataset 2
 %----------------------
 % checking filter settings in 1D by taking a line/col of the img for
 % freq analysis
-Fs = 40; % MHz Samplingfreq of the US not the signal
-T_duration = 10; % microseconds (the time intervall for the GH pulses)
+Fs = 40; % MHz sampling freq of the US (not the signal)
+T_duration = 10; % µs (the time intervall for the GH pulses)
 t = linspace(-T_duration,T_duration,2*T_duration*Fs);
 
 % GH low pass
@@ -120,10 +100,11 @@ GHlo = exp(-(t./(b1)).^2).*Hlo;
 
 % GH high pass
 ordhi = 16;
-Hhi = hermiteH(ordhi, t./b2); % order 32
+Hhi = hermiteH(ordhi, t./b2);
 GHhi = exp(-(t./(b2)).^2).*Hhi;
 
-%%
+%% Plotting chosen polynomials
+
 figure(1);
 subplot(2,1,1)
 plot(t,GHlo,'r', 'LineWidth', 1.5);
@@ -135,9 +116,10 @@ title(['GH_{',num2str(ordhi),'}'])
 ylim([min(GHhi,[],'all')*1.25 max(GHhi,[],'all')*1.25]);
 sgtitle('Gaussian weighted Hermite polynomials')
 
-%% Plot one spectrum of one imageline for comparison with the GH spectra
-frame=floor(size(rfmat,3)/2); % 
-line=floor(size(rfmat,2)/2); %
+%% Generating a psd of one imageline for comparison with the GH spectra for 
+% H-scan setup
+frame=floor(size(rfmat,3)/2);
+line=floor(size(rfmat,2)/2);
 
 [pxxlo,flo] = pwelch(GHlo, hamming(512));
 f_VECTlo = linspace(0,Fs/2,length(flo));
@@ -152,7 +134,8 @@ imLineRF = double(squeeze(rfmat(:,line,frame)));
 f_VECT = linspace(0,Fs/2,length(f));
 p_NORM = sqrt(pxx)./max(sqrt(pxx));
 
-%%
+%% Plotting H-scan settings
+
 figure(2); clf; hold on;
 plot(f_VECT, p_NORM,'-','color',[0 .5 0],'LineWidth', 1.5);
 plot(f_VECTlo, p_NORMlo, 'r', 'LineWidth', 1.5);
@@ -163,11 +146,13 @@ legend({'RF imageline','Low pass','High pass'});
 ylim([	min([p_NORMlo p_NORMhi [p_NORM;ones(length(p_NORMlo)-length(p_NORM),1)]],[],'all')*1.15...
 		max([p_NORMlo p_NORMhi [p_NORM;zeros(length(p_NORMlo)-length(p_NORM),1)]],[],'all')*1.15]);
 
+
 %% ---------------------------
 % 2D H-scan conv and rgb encoding
 %-----------------------------
 clear RF_MATlo RF_MAThi
 clear Bmodeslo Bmodeshi
+
 % computing analytic energies for conv
 Elo=prod(1:2:(2*ordlo-1))*sqrt(pi/2);
 Ehi=prod(1:2:(2*ordhi-1))*sqrt(pi/2);
@@ -187,7 +172,8 @@ end
 Bmodeslo=sqrt(abs(hilbert(RF_MATlo)));
 Bmodeshi=sqrt(abs(hilbert(RF_MAThi)));
 
-%% rb colorcoding and filtering
+%% rgb encoding and filtering
+
 BmodesrgbH = zeros(shape(1),shape(2),3,noframes);
 Bmodesrgb = zeros(shape(1),shape(2),3,noframes);
 Bmodesrgblo = zeros(shape(1),shape(2),3,noframes);
@@ -196,6 +182,9 @@ Bmodesrgbhi = zeros(shape(1),shape(2),3,noframes);
 BmodesrgbH(:,:,1,:) = myrgbencoder(Bmodeslo);
 BmodesrgbH(:,:,3,:) = myrgbencoder(Bmodeshi);
 Bmodesrgb(:,:,2,:) = myrgbencoder(Bmodes);
+
+% Starting to display a counter due to computational time being long as 
+% mymedfilt has high complexity to make sure it's still running.
 
 BmodesrgbH(:,:,1,:) = mymedfilt(BmodesrgbH(:,:,1,:), [10,3]);
 disp('1')
@@ -207,7 +196,8 @@ disp('3')
 Bmodesrgblo(:,:,1,:)=BmodesrgbH(:,:,1,:);
 Bmodesrgbhi(:,:,3,:)=BmodesrgbH(:,:,3,:);
 
-%% manual climc selection
+%% manual climc selection for H-scan apperance
+
 for j=1:noframes
     rgblomean(j)=mean2(Bmodesrgblo(:,:,:,j));
     rgbhimean(j)=mean2(Bmodesrgbhi(:,:,:,j));
@@ -217,7 +207,8 @@ t = tiledlayout(1,2,'TileSpacing','Compact');
 
 ax1=nexttile;
 histogram(rgblomean,20,'FaceColor','red');
-%ax1.XTick=[.0382 .03934 .03984 .040496 .041316];
+%ax1.XTick=[.0382 .03934 .03984 .040496 .041316]; % custom tics for
+% generating imaging for demos
 title(ax1,'Low pass');
 
 ax2=nexttile;
@@ -227,20 +218,26 @@ title(ax2,'High pass');
 
 ylabel(t,'Culmutative sum of occurence');
 xlabel(t,'Normalized intensities I [1]');
-title(t,'H-scan mean channel intensity content for dataset 3')
+title(t,'H-scan mean channel intensity content for dataset 2')
 
-climc=[0.03,0.04];
+climc=[0.03,0.04]; % Manually selected based on the plots above
 
-%% plot H-scan filtering results
+%% plot B-mode vs both H-scan channels respectively
 draw_pic(Bmodes, Bmodeslo, Bmodeshi, [], 0.05, []);
 
-%% plot 2D colorcoded H-scan filtering results
+%% plot color channels of H-scan (diagnostic for code)
 draw_pic(Bmodesrgb,Bmodesrgblo,Bmodesrgbhi,BmodesrgbH, 0.05, climc);
 
 %% plot comparison between B-mode and H-scan
 draw_pic2(Bmodes,BmodesrgbH, 0.1, climc);
 
-%% analyze intensity in a pixel; over measurement time (frames)
+%% ----------------------------
+% Additional analytical imagery
+%------------------------------
+% Analyze intensity in a pixel; over measurement time (frames)
+% [If more time would exist I would have extended this to an area instead
+% of one pixel but this outline is easy to extend to that function.]
+
 depth=floor(size(BmodesrgbH,1)/2);
 
 for j=1:noframes
@@ -292,6 +289,7 @@ sgtitle(['Comparison of filter channel std of intensities in frames']);
 legend({'Low pass','High pass','Red trend','Blue trend'});
 
 %% analyze intensity in a line; over signal time (depth)
+
 nodepths=size(BmodesrgbH,1);
 depths=1:nodepths;
 
@@ -315,6 +313,7 @@ xlabel('Depth (image line time)'); ylabel('Channel intensity I [%]');
 legend({'Low pass','High pass','Red trend','Blue trend'});
 
 %% analyze intensity in one frame; over signal time (depth)
+
 nolines=size(BmodesrgbH,2);
 lines=1:nolines;
 
@@ -340,8 +339,12 @@ sgtitle(['Comparison of channel mean intensities for\newlineframe ',num2str(fram
 xlabel('Depth (image line time)'); ylabel('Channel intensity I [%]');
 legend({'Low pass','High pass','Red trend','Blue trend'});
 
-%% analyze mean intensity off all frames; over signal time (depth)
+%% --------------------------------
+% Signal profile of H-scan channels
+%----------------------------------
+% Analyze mean intensity off all frames; over signal time (depth)
 clear Templo Temphi lineFramesHlo lineFramesHhi
+
 nodepths=size(BmodesrgbH,1);
 depths=1:nodepths;
 nolines=size(BmodesrgbH,2);
@@ -389,7 +392,10 @@ title(t,['H-scan channel mean intensities for dataset 2\newline', chosen_dataset
 cb = colorbar;
 cb.Layout.Tile = 'east';
 
-%% Mask the image
+%% ------------------------------------------
+% Drawing mask over all frames visualizing it
+%--------------------------------------------
+% Masking the image
 % for j=1:noframes
 %     Hmasked(:,:,:,j) = BmodesrgbH(:,:,:,j).*repmat(roimat,[1,1,3]);
 % end

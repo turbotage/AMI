@@ -1,12 +1,11 @@
 function draw_pic(mat1, mat2, mat3, mat4, delay, climc)
-% plots 3-4 images with specified delay and option of including
-% figure number
+% Rebeccas adaption of draw_pic for H-scan. Plots 3 gray or 4 rgb images with specified delay and option of including
+% color limits (has default.)
 
 if nargin < 6
     climc = [0 1];
 end
 
-% TODO: ADAPT FOR clim INPUT
 lowi = 0.0;
 highi = 0.1;
 
@@ -25,7 +24,7 @@ if size(mat2,3)==3
 
     % Maximize window.
     g = gcf;
-    % 		g.WindowState = 'maximized';
+    % g.WindowState = 'maximized';
     drawnow;
 
     subplot(2,2,1);
